@@ -1,0 +1,301 @@
+[
+  {
+    "puzzleId": "key_5x5",
+    "revision": 1,
+    "title": "Key",
+    "category": "objects",
+    "categoryTitles": {},
+    "width": 5,
+    "height": 5,
+    "rowHints": [
+      [
+        3
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        3
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        3
+      ]
+    ],
+    "columnHints": [
+      [
+        0
+      ],
+      [
+        3
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        3,
+        1
+      ],
+      [
+        2
+      ]
+    ],
+    "encodedSolution": "0111001010011100010100111",
+    "difficulty": "easy",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "starter",
+      "easy"
+    ],
+    "checksum": "983a89d26c84eadc4f3b542da715d950cbe56ea65d4d1ffc7f3be2bd58c4fc45",
+    "colorPalette": [
+      "#F1C40F"
+    ]
+  },
+  {
+    "puzzleId": "sword_10x10",
+    "revision": 1,
+    "title": "Sword",
+    "category": "objects",
+    "categoryTitles": {},
+    "width": 10,
+    "height": 10,
+    "rowHints": [
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        6
+      ],
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        4
+      ]
+    ],
+    "columnHints": [
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1
+      ],
+      [
+        0
+      ],
+      [
+        0
+      ]
+    ],
+    "encodedSolution": "0000110000000011000000001100000000110000000011000000001100000011111100000011000000001100000001111000",
+    "difficulty": "easy",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "medium",
+      "sword"
+    ],
+    "checksum": "26e618afa5062dfa6b952b1cb31303c13193faa1192445033556d028e5928e68",
+    "colorPalette": [
+      "#95A5A6",
+      "#D35400"
+    ]
+  },
+  {
+    "puzzleId": "castle_15x15",
+    "revision": 1,
+    "title": "Castle",
+    "category": "objects",
+    "categoryTitles": {},
+    "width": 15,
+    "height": 15,
+    "rowHints": [
+      [
+        1,
+        1,
+        5,
+        1,
+        1
+      ],
+      [
+        3,
+        5,
+        3
+      ],
+      [
+        3,
+        5,
+        3
+      ],
+      [
+        15
+      ],
+      [
+        15
+      ],
+      [
+        3,
+        3,
+        3
+      ],
+      [
+        3,
+        3,
+        3
+      ],
+      [
+        15
+      ],
+      [
+        15
+      ],
+      [
+        4,
+        5,
+        4
+      ],
+      [
+        4,
+        5,
+        4
+      ],
+      [
+        4,
+        5,
+        4
+      ],
+      [
+        4,
+        3,
+        4
+      ],
+      [
+        4,
+        3,
+        4
+      ],
+      [
+        4,
+        3,
+        4
+      ]
+    ],
+    "columnHints": [
+      [
+        5,
+        8
+      ],
+      [
+        4,
+        8
+      ],
+      [
+        15
+      ],
+      [
+        12
+      ],
+      [
+        9
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        15
+      ],
+      [
+        15
+      ],
+      [
+        15
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        9
+      ],
+      [
+        14
+      ],
+      [
+        15
+      ],
+      [
+        2,
+        8
+      ],
+      [
+        2,
+        8
+      ]
+    ],
+    "encodedSolution": "101011111010100111011111011100111011111011100111111111111111111111111111111001110111011100001110111011100111111111111111111111111111111111101111101111111101111101111111101111101111111100111001111111100111001111111100111001111",
+    "difficulty": "medium",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "hard",
+      "castle"
+    ],
+    "checksum": "4f1eb59f9eed1b5176a3f861a79e16bf97bcbbad4a803b42e9232540184175e7",
+    "colorPalette": [
+      "#78909C",
+      "#37474F"
+    ]
+  }
+]

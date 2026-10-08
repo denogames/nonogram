@@ -1,0 +1,282 @@
+[
+  {
+    "puzzleId": "apple_5x5",
+    "revision": 1,
+    "title": "Apple",
+    "category": "food",
+    "categoryTitles": {},
+    "width": 5,
+    "height": 5,
+    "rowHints": [
+      [
+        1
+      ],
+      [
+        3
+      ],
+      [
+        5
+      ],
+      [
+        5
+      ],
+      [
+        3
+      ]
+    ],
+    "columnHints": [
+      [
+        2
+      ],
+      [
+        4
+      ],
+      [
+        5
+      ],
+      [
+        4
+      ],
+      [
+        2
+      ]
+    ],
+    "encodedSolution": "0010001110111111111101110",
+    "difficulty": "easy",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "starter",
+      "easy",
+      "apple"
+    ],
+    "checksum": "0ef3c60ddea878553614ae8a52ad76e27b2f68e43b4184230c035c88412f7889",
+    "colorPalette": [
+      "#E74C3C",
+      "#27AE60"
+    ]
+  },
+  {
+    "puzzleId": "cup_10x10",
+    "revision": 1,
+    "title": "Coffee Mug",
+    "category": "food",
+    "categoryTitles": {},
+    "width": 10,
+    "height": 10,
+    "rowHints": [
+      [
+        0
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        0
+      ],
+      [
+        6
+      ],
+      [
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        1,
+        1
+      ],
+      [
+        6
+      ],
+      [
+        0
+      ]
+    ],
+    "columnHints": [
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        2,
+        1,
+        1
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        1,
+        1
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        1
+      ],
+      [
+        3
+      ]
+    ],
+    "encodedSolution": "0000000000001100110000110011000000000000001111110000100001010010000111001000010100111111000000000000",
+    "difficulty": "easy",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "medium",
+      "coffee"
+    ],
+    "checksum": "3e5376db5704ed345414119270a480e97bfceab01c9b3ed739d0d26548ee3282",
+    "colorPalette": [
+      "#795548",
+      "#D7CCC8"
+    ]
+  },
+  {
+    "puzzleId": "icecream_15x15",
+    "revision": 1,
+    "title": "Ice Cream",
+    "category": "food",
+    "categoryTitles": {},
+    "width": 15,
+    "height": 15,
+    "rowHints": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        11
+      ],
+      [
+        11
+      ],
+      [
+        11
+      ],
+      [
+        9
+      ],
+      [
+        7
+      ],
+      [
+        7
+      ],
+      [
+        5
+      ],
+      [
+        5
+      ],
+      [
+        3
+      ],
+      [
+        3
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "columnHints": [
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        3
+      ],
+      [
+        5
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        12
+      ],
+      [
+        15
+      ],
+      [
+        12
+      ],
+      [
+        10
+      ],
+      [
+        8
+      ],
+      [
+        5
+      ],
+      [
+        3
+      ],
+      [
+        0
+      ],
+      [
+        0
+      ]
+    ],
+    "encodedSolution": "000011111110000000111111111000001111111111100001111111111100001111111111100000111111111000000011111110000000011111110000000001111100000000001111100000000000111000000000000111000000000000010000000000000010000000000000010000000",
+    "difficulty": "medium",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "hard",
+      "icecream"
+    ],
+    "checksum": "b1696c1cfb125152dd257494fa501cde67c6959dfb55613839b5dab67b3d5205",
+    "colorPalette": [
+      "#FF4081",
+      "#FFB74D"
+    ]
+  }
+]

@@ -1,0 +1,344 @@
+[
+  {
+    "puzzleId": "heart_5x5",
+    "revision": 1,
+    "title": "Heart",
+    "category": "symbols",
+    "categoryTitles": {},
+    "width": 5,
+    "height": 5,
+    "rowHints": [
+      [
+        1,
+        1
+      ],
+      [
+        5
+      ],
+      [
+        5
+      ],
+      [
+        3
+      ],
+      [
+        1
+      ]
+    ],
+    "columnHints": [
+      [
+        2
+      ],
+      [
+        4
+      ],
+      [
+        4
+      ],
+      [
+        4
+      ],
+      [
+        2
+      ]
+    ],
+    "encodedSolution": "0101011111111110111000100",
+    "difficulty": "easy",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "starter",
+      "easy",
+      "heart"
+    ],
+    "checksum": "f8182527af588926b08b659ec67dfa5e88237344f9332bae7b7a8c66f7ff230d",
+    "colorPalette": [
+      "#E91E63"
+    ]
+  },
+  {
+    "puzzleId": "star_5x5",
+    "revision": 1,
+    "title": "Star",
+    "category": "symbols",
+    "categoryTitles": {},
+    "width": 5,
+    "height": 5,
+    "rowHints": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        3
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "columnHints": [
+      [
+        1,
+        1
+      ],
+      [
+        3
+      ],
+      [
+        3
+      ],
+      [
+        3
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "encodedSolution": "0010011111011100101010001",
+    "difficulty": "easy",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "starter",
+      "easy",
+      "star"
+    ],
+    "checksum": "dfe09f960b8b820804248fb829eeac6e443efffb751c99bb577e9a0b45504592",
+    "colorPalette": [
+      "#F39C12"
+    ]
+  },
+  {
+    "puzzleId": "music_10x10",
+    "revision": 1,
+    "title": "Music Note",
+    "category": "symbols",
+    "categoryTitles": {},
+    "width": 10,
+    "height": 10,
+    "rowHints": [
+      [
+        4
+      ],
+      [
+        4
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        4
+      ],
+      [
+        6
+      ],
+      [
+        6
+      ],
+      [
+        4
+      ]
+    ],
+    "columnHints": [
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        2
+      ],
+      [
+        4
+      ],
+      [
+        4
+      ],
+      [
+        4
+      ],
+      [
+        10
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2
+      ],
+      [
+        2
+      ]
+    ],
+    "encodedSolution": "0000001111000000111100000010000000001000000000100000000010000001111000001111110000111111000001111000",
+    "difficulty": "easy",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "medium",
+      "music"
+    ],
+    "checksum": "6849de52425ad59cc3e625a6f1857d501bfa066f2b9f8331025faa47c3b97dca",
+    "colorPalette": [
+      "#8E44AD"
+    ]
+  },
+  {
+    "puzzleId": "moon_15x15",
+    "revision": 1,
+    "title": "Crescent Moon",
+    "category": "symbols",
+    "categoryTitles": {},
+    "width": 15,
+    "height": 15,
+    "rowHints": [
+      [
+        6
+      ],
+      [
+        8
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        2
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        3
+      ],
+      [
+        3
+      ],
+      [
+        3
+      ],
+      [
+        3
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        3,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        8
+      ],
+      [
+        6
+      ],
+      [
+        2
+      ]
+    ],
+    "columnHints": [
+      [
+        0
+      ],
+      [
+        4
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        0
+      ],
+      [
+        0
+      ]
+    ],
+    "encodedSolution": "000001111110000000011111111000000111000011100001110000001100001100000000100011100000000000011100000000000011100000000000011100000000000001100000000100001110000001100000111000011100000011111111000000001111110000000000011000000",
+    "difficulty": "hard",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "hard",
+      "moon"
+    ],
+    "checksum": "0d1eca49a789f47a8f41d57a92befbd61b7370aadac45e4cf93c7af224b35bed",
+    "colorPalette": [
+      "#F1C40F",
+      "#34495E"
+    ]
+  }
+]

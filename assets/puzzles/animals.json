@@ -1,0 +1,346 @@
+[
+  {
+    "puzzleId": "cat_5x5",
+    "revision": 1,
+    "title": "Cat",
+    "category": "animals",
+    "categoryTitles": {},
+    "width": 5,
+    "height": 5,
+    "rowHints": [
+      [
+        1,
+        1
+      ],
+      [
+        5
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        3
+      ],
+      [
+        1
+      ]
+    ],
+    "columnHints": [
+      [
+        3
+      ],
+      [
+        3
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        3
+      ],
+      [
+        3
+      ]
+    ],
+    "encodedSolution": "1000111111110110111000100",
+    "difficulty": "easy",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "starter",
+      "easy",
+      "cat"
+    ],
+    "checksum": "205a99d8e47c1197bedff5347291b23c93644704b328d054b7661e1e8da15737",
+    "colorPalette": [
+      "#E67E22",
+      "#D35400"
+    ]
+  },
+  {
+    "puzzleId": "duck_5x5",
+    "revision": 1,
+    "title": "Duck",
+    "category": "animals",
+    "categoryTitles": {},
+    "width": 5,
+    "height": 5,
+    "rowHints": [
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        5
+      ],
+      [
+        4
+      ],
+      [
+        2
+      ]
+    ],
+    "columnHints": [
+      [
+        2
+      ],
+      [
+        3
+      ],
+      [
+        5
+      ],
+      [
+        4
+      ],
+      [
+        1
+      ]
+    ],
+    "encodedSolution": "0011000110111111111001100",
+    "difficulty": "easy",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "starter",
+      "easy",
+      "duck"
+    ],
+    "checksum": "776e9a6f33dc6b4146809526ef18b9347727700701f438bb73c4e3782990b9cd",
+    "colorPalette": [
+      "#F1C40F",
+      "#E67E22"
+    ]
+  },
+  {
+    "puzzleId": "penguin_10x10",
+    "revision": 1,
+    "title": "Penguin",
+    "category": "animals",
+    "categoryTitles": {},
+    "width": 10,
+    "height": 10,
+    "rowHints": [
+      [
+        4
+      ],
+      [
+        6
+      ],
+      [
+        1,
+        2,
+        1
+      ],
+      [
+        6
+      ],
+      [
+        8
+      ],
+      [
+        8
+      ],
+      [
+        8
+      ],
+      [
+        6
+      ],
+      [
+        4
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "columnHints": [
+      [
+        0
+      ],
+      [
+        3
+      ],
+      [
+        7,
+        1
+      ],
+      [
+        2,
+        7
+      ],
+      [
+        9
+      ],
+      [
+        9
+      ],
+      [
+        2,
+        7
+      ],
+      [
+        7,
+        1
+      ],
+      [
+        3
+      ],
+      [
+        0
+      ]
+    ],
+    "encodedSolution": "0001111000001111110000101101000011111100011111111001111111100111111110001111110000011110000011001100",
+    "difficulty": "easy",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "medium",
+      "penguin"
+    ],
+    "checksum": "079b87bb3630f6f688f4a5e1778d5f790e5935fd92288ce16be39d0eab003529",
+    "colorPalette": [
+      "#2C3E50",
+      "#ECF0F1",
+      "#E67E22"
+    ]
+  },
+  {
+    "puzzleId": "elephant_15x15",
+    "revision": 1,
+    "title": "Elephant",
+    "category": "animals",
+    "categoryTitles": {},
+    "width": 15,
+    "height": 15,
+    "rowHints": [
+      [
+        7
+      ],
+      [
+        11
+      ],
+      [
+        12
+      ],
+      [
+        4,
+        7
+      ],
+      [
+        4,
+        7
+      ],
+      [
+        13
+      ],
+      [
+        13
+      ],
+      [
+        13
+      ],
+      [
+        13
+      ],
+      [
+        13
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        3,
+        3
+      ]
+    ],
+    "columnHints": [
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        11
+      ],
+      [
+        13
+      ],
+      [
+        14
+      ],
+      [
+        14
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ],
+      [
+        14
+      ],
+      [
+        15
+      ],
+      [
+        14
+      ],
+      [
+        14
+      ]
+    ],
+    "encodedSolution": "000000111111100000011111111111000111111111111001111001111111001111001111111001111111111111001111111111111001111111111111001111111111111001111111111111001111000001111001111000001111001111000001111001111000001111000111000000111",
+    "difficulty": "medium",
+    "contentVersion": 1,
+    "publicationStatus": "published",
+    "author": "Antigravity Studio",
+    "license": "Proprietary",
+    "tags": [
+      "hard",
+      "elephant"
+    ],
+    "checksum": "abdae28da6d189d2a99655ce717d9e65513d71c2b6672c24e52f4ea47202e82d",
+    "colorPalette": [
+      "#7F8C8D",
+      "#95A5A6"
+    ]
+  }
+]
