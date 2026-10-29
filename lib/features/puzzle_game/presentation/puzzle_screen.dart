@@ -3,10 +3,12 @@ import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:studio_core_sdk/studio_core_sdk.dart';
 import '../../../core/monetization/ads/ad_manager.dart';
 import '../../../core/monetization/economy/economy_manager.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/storage/database/app_database.dart';
+import '../../../core/storage/vault/game_state_vault.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../engine/game/puzzle_engine.dart';
 import '../../../engine/models/cell_state.dart';
@@ -34,6 +36,7 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
   PuzzleDefinition? _puzzle;
   PuzzleEngine? _engine;
   Timer? _timer;
+  final ValueNotifier<int> _timerNotifier = ValueNotifier<int>(0);
   EditTool _currentTool = EditTool.fill;
   bool _isPrecisionActive = false;
   bool _showRevealDialog = false;
@@ -48,6 +51,7 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _timerNotifier.dispose();
     _saveProgressIfUnfinished();
     super.dispose();
   }
@@ -64,26 +68,43 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
     final prefs = ref.read(preferencesProvider);
     final mistakePolicy = prefs.mistakePolicy;
 
+    final maxMistakes = StudioSdk.isInitialized
+        ? StudioSdk.instance.liveOps.getBalanceValue<int>('max_mistakes_allowed', defaultValue: 3)
+        : 3;
+
     final engine = PuzzleEngine(
       puzzle: puzzle,
       mistakePolicy: mistakePolicy,
-      maxMistakesAllowed: 3,
+      maxMistakesAllowed: maxMistakes,
     );
 
-    // Check if previous unfinished session is saved in SQLite
-    final db = ref.read(databaseProvider);
-    final savedProgress = await db.getProgress(puzzle.id);
+    // 1. Check crash-safe GameStateVault first, then SQLite fallback
+    final vault = GameStateVault.instance;
+    final vaultState = vault.isInitialized ? vault.getPuzzleState(puzzle.id) : null;
 
-    if (savedProgress != null && !savedProgress.isCompleted && savedProgress.savedBoardState != null) {
+    if (vaultState != null && !vaultState.isCompleted && vaultState.savedBoardState != null) {
       engine.restoreSession(
-        encodedBoard: savedProgress.savedBoardState!,
-        mistakes: savedProgress.savedMistakes,
-        hintsUsed: savedProgress.savedHintsUsed,
-        elapsedSeconds: savedProgress.savedElapsedSeconds,
+        encodedBoard: vaultState.savedBoardState!,
+        mistakes: vaultState.savedMistakes,
+        hintsUsed: vaultState.savedHintsUsed,
+        elapsedSeconds: vaultState.savedElapsedSeconds,
       );
+    } else {
+      final db = ref.read(databaseProvider);
+      final savedProgress = await db.getProgress(puzzle.id);
+
+      if (savedProgress != null && !savedProgress.isCompleted && savedProgress.savedBoardState != null) {
+        engine.restoreSession(
+          encodedBoard: savedProgress.savedBoardState!,
+          mistakes: savedProgress.savedMistakes,
+          hintsUsed: savedProgress.savedHintsUsed,
+          elapsedSeconds: savedProgress.savedElapsedSeconds,
+        );
+      }
     }
 
     if (mounted) {
+      _timerNotifier.value = engine.elapsedSeconds;
       setState(() {
         _puzzle = puzzle;
         _engine = engine;
@@ -107,9 +128,9 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_engine != null && !_engine!.isCompleted && mounted) {
-        setState(() {
-          _engine!.tickTimer();
-        });
+        _engine!.tickTimer();
+        // Restrict re-renders strictly to leaf timer badge
+        _timerNotifier.value = _engine!.elapsedSeconds;
       }
     });
   }
@@ -117,13 +138,35 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
   Future<void> _saveProgressIfUnfinished() async {
     if (_engine == null || _puzzle == null || _engine!.isCompleted) return;
 
+    final boardStr = _engine!.serializeBoardState();
+    final now = DateTime.now();
+
+    // 1. Persist to crash-safe vault
+    final vault = GameStateVault.instance;
+    if (vault.isInitialized) {
+      await vault.savePuzzleState(
+        SavedPuzzleState(
+          puzzleId: _puzzle!.id,
+          isCompleted: false,
+          stars: 0,
+          bestTimeSeconds: 0,
+          lastPlayed: now,
+          savedBoardState: boardStr,
+          savedMistakes: _engine!.mistakes,
+          savedHintsUsed: _engine!.hintsUsed,
+          savedElapsedSeconds: _engine!.elapsedSeconds,
+        ),
+      );
+    }
+
+    // 2. Persist to SQLite
     final db = ref.read(databaseProvider);
     await db.saveProgress(
       PuzzleProgressEntriesCompanion(
         puzzleId: drift.Value(_puzzle!.id),
         isCompleted: const drift.Value(false),
-        lastPlayed: drift.Value(DateTime.now()),
-        savedBoardState: drift.Value(_engine!.serializeBoardState()),
+        lastPlayed: drift.Value(now),
+        savedBoardState: drift.Value(boardStr),
         savedMistakes: drift.Value(_engine!.mistakes),
         savedHintsUsed: drift.Value(_engine!.hintsUsed),
         savedElapsedSeconds: drift.Value(_engine!.elapsedSeconds),
@@ -142,22 +185,37 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
     final mistakes = _engine!.mistakes;
     final hints = _engine!.hintsUsed;
     final stars = (mistakes == 0 && hints == 0) ? 3 : (mistakes <= 1 && hints <= 2 ? 2 : 1);
+    final now = DateTime.now();
 
-    // 2. Persist completion in DB
+    // 2. Persist completion to crash-safe vault
+    final vault = GameStateVault.instance;
+    if (vault.isInitialized) {
+      await vault.savePuzzleState(
+        SavedPuzzleState(
+          puzzleId: _puzzle!.id,
+          isCompleted: true,
+          stars: stars,
+          bestTimeSeconds: _engine!.elapsedSeconds,
+          lastPlayed: now,
+          savedBoardState: null,
+        ),
+      );
+    }
+
+    // 3. Persist completion in DB
     await db.saveProgress(
       PuzzleProgressEntriesCompanion(
         puzzleId: drift.Value(_puzzle!.id),
         isCompleted: const drift.Value(true),
         stars: drift.Value(stars),
         bestTimeSeconds: drift.Value(_engine!.elapsedSeconds),
-        lastPlayed: drift.Value(DateTime.now()),
-        savedBoardState: const drift.Value(null), // clear saved in-progress state
+        lastPlayed: drift.Value(now),
+        savedBoardState: const drift.Value(null),
       ),
     );
 
     // If Daily, record daily entry
     if (widget.isDaily) {
-      final now = DateTime.now();
       final dateKey = '${now.year}-${now.month}-${now.day}';
       await db.saveDaily(
         DailyPuzzleEntriesCompanion(
@@ -174,7 +232,11 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
       );
     }
 
-    // 3. Analytics
+    // 4. Grant Gameplay Coins via Single-Source Wallet
+    final economy = ref.read(economyManagerProvider);
+    final earnedCoins = stars * 15;
+    await economy.grantReward(addCoins: earnedCoins);
+
     await analytics.logPuzzleCompleted(
       puzzleId: _puzzle!.id,
       elapsedSeconds: _engine!.elapsedSeconds,
@@ -183,8 +245,31 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
       isDaily: widget.isDaily,
     );
 
-    // 4. Natural Interstitial Ad check
+    // 5. Natural Interstitial Ad check
     await adManager.maybeShowCompletionInterstitial();
+
+    // 6. Studio Core SDK Outbox Integration (offline-safe)
+    if (StudioSdk.isInitialized) {
+      final sdk = StudioSdk.instance;
+      unawaited(
+        sdk.outboxSync.enqueueMutation(
+          type: OutboxOperationType.levelProgression,
+          payload: {
+            'puzzleId': _puzzle!.id,
+            'category': _puzzle!.category,
+            'stars': stars,
+            'elapsedSeconds': _engine!.elapsedSeconds,
+            'mistakes': mistakes,
+            'hintsUsed': hints,
+            'isDaily': widget.isDaily,
+            'completedAt': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
+
+      // Ad mediation interstitial check
+      unawaited(sdk.adMediation.showInterstitialIfEligible(placement: 'puzzle_complete'));
+    }
 
     if (mounted) {
       setState(() {
@@ -197,6 +282,25 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
     setState(() {});
     if (_engine != null && _engine!.isCompleted) {
       _handlePuzzleCompletion();
+    } else if (_engine != null && _engine!.isFailed) {
+      _handlePuzzleFailed();
+    }
+  }
+
+  void _handlePuzzleFailed() {
+    _timer?.cancel();
+    if (StudioSdk.isInitialized) {
+      final totalCells = _puzzle!.width * _puzzle!.height;
+      final filledCells = _engine!.board.expand((r) => r).where((c) => c != CellState.empty).length;
+      final ratio = totalCells > 0 ? (filledCells / totalCells).clamp(0.0, 1.0) : 0.5;
+
+      unawaited(
+        StudioSdk.instance.pinchPoint.evaluateGameContext(
+          depletedCurrencyId: StudioCurrencyIds.lives,
+          levelCompletionRatio: ratio,
+          consecutiveFailures: 1,
+        ),
+      );
     }
   }
 
@@ -217,7 +321,20 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
         _onBoardModified();
       }
     } else {
-      // Show hint dialog to watch ad or buy with coins
+      // Trigger RFM dynamic pinch-point rescue evaluation
+      if (StudioSdk.isInitialized) {
+        final totalCells = _puzzle!.width * _puzzle!.height;
+        final filledCells = _engine!.board.expand((r) => r).where((c) => c != CellState.empty).length;
+        final ratio = totalCells > 0 ? (filledCells / totalCells).clamp(0.0, 1.0) : 0.8;
+
+        unawaited(
+          StudioSdk.instance.pinchPoint.evaluateGameContext(
+            depletedCurrencyId: StudioCurrencyIds.hints,
+            levelCompletionRatio: ratio,
+            consecutiveFailures: _engine!.isFailed ? 1 : 0,
+          ),
+        );
+      }
       _showOutOfHintsDialog(economy, adManager);
     }
   }
@@ -228,7 +345,7 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Get More Hints'),
         content: Text(
-          'You have 0 hints left. You have ${economy.coins} coins.\n\nChoose an option below:',
+          'You have 0 hints left. You have ${economy.coins} coins.\n\nExchange coins for hints below:',
         ),
         actions: [
           TextButton(
@@ -245,18 +362,6 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
                 await _onHintRequested();
               },
             ),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.videocam_rounded),
-            label: const Text('Free Hint (Watch Ad)'),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final earned = await adManager.showRewardedForHint();
-              if (earned) {
-                await economy.grantReward(addHints: 1);
-                await _onHintRequested();
-              }
-            },
-          ),
         ],
       ),
     );
@@ -307,7 +412,7 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
           ],
         ),
         actions: [
-          // Timer Chip
+          // Leaf-only Timer Chip (zero full-screen repaints)
           Center(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -320,12 +425,15 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
                 children: [
                   Icon(Icons.timer_outlined, size: 16, color: colors.textSecondary),
                   const SizedBox(width: 4),
-                  Text(
-                    _formatTimer(_engine!.elapsedSeconds),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: colors.textPrimary,
+                  ValueListenableBuilder<int>(
+                    valueListenable: _timerNotifier,
+                    builder: (context, seconds, _) => Text(
+                      _formatTimer(seconds),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textPrimary,
+                      ),
                     ),
                   ),
                 ],
@@ -344,6 +452,7 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
                   puzzle: _puzzle!,
                   mistakePolicy: ref.read(preferencesProvider).mistakePolicy,
                 );
+                _timerNotifier.value = 0;
               });
             },
           ),
@@ -450,6 +559,7 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
                     puzzle: _puzzle!,
                     mistakePolicy: ref.read(preferencesProvider).mistakePolicy,
                   );
+                  _timerNotifier.value = 0;
                   _startTimer();
                 });
               },

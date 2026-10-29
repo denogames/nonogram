@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:studio_core_sdk/studio_core_sdk.dart';
 import '../../features/collections/domain/puzzle_repository.dart';
 import '../analytics/analytics_service.dart';
 import '../monetization/ads/ad_manager.dart';
@@ -48,7 +49,8 @@ final adManagerProvider = Provider<AdManager>((ref) {
 // Economy Manager Provider
 final economyManagerProvider = Provider<EconomyManager>((ref) {
   final db = ref.watch(databaseProvider);
-  return EconomyManager(db: db);
+  final wallet = StudioSdk.isInitialized ? StudioSdk.instance.wallet : null;
+  return EconomyManager(db: db, wallet: wallet);
 });
 
 // Theme Mode Notifier (Riverpod 3)

@@ -1,5 +1,7 @@
 # Nonogram — Production-Ready Flutter Puzzle Game
 
+> **Recovery note — 18–19 October 2026:** The original title, badges, feature guarantees and quality claims below are historical documentation claims, not current execution or release evidence. M0 documents the baseline; application tests, analysis, builds, content validation and installed SDK versions were not verified in this recovery. See [current status](docs/project_status.md) and [evidence limits](docs/test_report.md).
+
 [![Flutter](https://img.shields.io/badge/Flutter-3.47.5-blue.svg)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.13.4-0175C2.svg)](https://dart.dev)
 [![Tests](https://img.shields.io/badge/Tests-35%20Passed-success.svg)]()
@@ -7,6 +9,15 @@
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-lightgrey.svg)]()
 
 A commercially viable, offline-first **Nonogram (Picross)** mobile game engineered for Android and iOS using **Flutter**, **Riverpod**, **go_router**, and **Drift SQLite**. Features responsive touch interactions, guaranteed unique puzzle logic, extensible content generation tooling, diverse themes, and clean IAP/advertising monetization abstractions.
+
+## Project records
+
+- [Project context and canonical document map](docs/project_context.md)
+- [Current status, B1–B7 and Continuity Checkpoint](docs/project_status.md)
+- [Decisions, execution authorization and delivery acceptance](docs/decisions.md)
+- [Repository working principles](AGENTS.md)
+- [Roadmap: M0 and Proposed M1](docs/roadmap.md)
+- [Historical test report and current document checks](docs/test_report.md)
 
 ---
 
@@ -70,13 +81,15 @@ lib/
     └── tutorial/                 # Illustrated interactive guide with practice level
 ```
 
-For complete technical specifications, see [docs/architecture.md](file:///docs/architecture.md).
+For the existing technical design, see [docs/architecture.md](docs/architecture.md). Design statements are not runtime verification; open differences are recorded in the project status.
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
+
+The prerequisites below are historical guidance, not an inventory of the installed environment. [pubspec.yaml](pubspec.yaml) currently declares Dart `^3.13.4`; the installed Flutter/Dart SDK was not checked. The setup, execution and content-tool examples below were not run during M0.
 
 - Flutter SDK `^3.47.0` (Dart `^3.13.0`)
 - Android Studio / Xcode for device deployment
@@ -85,7 +98,7 @@ For complete technical specifications, see [docs/architecture.md](file:///docs/a
 
 ```bash
 # Clone and enter directory
-cd prj2
+cd nonogram
 
 # Install dependencies
 flutter pub get
@@ -114,7 +127,7 @@ dart run bin/content_tool.dart validate assets/puzzles/animals.json
 dart run bin/content_tool.dart build-packs
 ```
 
-For schema details, see [docs/content_format.md](file:///docs/content_format.md).
+For schema details, see [docs/content_format.md](docs/content_format.md).
 
 ---
 
@@ -122,13 +135,13 @@ For schema details, see [docs/content_format.md](file:///docs/content_format.md)
 
 - **In-App Purchase**: Non-consumable product `com.antigravity.nonogram.ads_free`.
 - **Offline Entitlement Cache**: Verified purchases are recorded into SQLite (`EntitlementEntries`) to ensure lifetime access without requiring continuous network connectivity.
-- **Store Setup Instructions**: Detailed steps for Google Play Console and Apple App Store Connect are documented in [docs/monetization.md](file:///docs/monetization.md).
+- **Store Setup Instructions**: Existing design and setup guidance is documented in [docs/monetization.md](docs/monetization.md). Store setup and production integration were not verified during M0; see B1/B2/B6 in the project status.
 
 ---
 
 ## Automated Test Suite
 
-35 comprehensive tests verify all system layers:
+Static inspection found 35 test declarations across eight Dart files. The historical pass claims are preserved in the test report; no test was run during M0, and the existing tests do not prove all startup, process-persistence or device behaviors:
 
 ```bash
 flutter test
@@ -143,4 +156,4 @@ flutter test
 - **Entitlements (`test/monetization/entitlement_test.dart`)**: Purchasing, offline session cache, and revocation.
 - **Widgets (`test/widget_test.dart`)**: Home screen rendering and control bar interactions.
 
-Full verification details are in [docs/test_report.md](file:///docs/test_report.md).
+Historical results, their limits and the scope of current document checks are in [docs/test_report.md](docs/test_report.md).

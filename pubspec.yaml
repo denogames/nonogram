@@ -28,6 +28,10 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  studio_core_sdk:
+    git:
+      url: https://github.com/denogames/studio-core-sdk.git
+      ref: feat/offline-core-hardening-v1
   flutter:
     sdk: flutter
 

@@ -802,6 +802,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
+  studio_core_sdk:
+    dependency: "direct main"
+    description:
+      path: "../studio-core-sdk"
+      relative: true
+    source: path
+    version: "1.0.0"
   term_glyph:
     dependency: transitive
     description:

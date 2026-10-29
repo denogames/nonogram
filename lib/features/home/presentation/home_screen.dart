@@ -106,10 +106,10 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 36),
                     const SizedBox(width: 14),
-                    Expanded(
+                    const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
                             'Daily Reward Ready!',
                             style: TextStyle(

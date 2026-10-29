@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:studio_core_sdk/studio_core_sdk.dart';
 import '../../../engine/models/puzzle_definition.dart';
 import '../../../engine/validator/puzzle_validator.dart';
 
@@ -79,8 +80,10 @@ class PuzzleRepository {
 
   List<PuzzleCategory> getCategories() {
     final result = <PuzzleCategory>[];
+    final processed = <String>{};
     for (final meta in categoryMetadata) {
       final catId = meta['id']!;
+      processed.add(catId);
       final puzzles = _puzzlesByCategory[catId] ?? [];
       result.add(PuzzleCategory(
         id: catId,
@@ -89,7 +92,129 @@ class PuzzleRepository {
         puzzles: puzzles,
       ));
     }
+
+    // Dynamic categories from remote LiveOps packs
+    for (final entry in _puzzlesByCategory.entries) {
+      if (!processed.contains(entry.key) && entry.value.isNotEmpty) {
+        result.add(PuzzleCategory(
+          id: entry.key,
+          title: entry.key.isEmpty
+              ? 'Bonus'
+              : entry.key[0].toUpperCase() + entry.key.substring(1),
+          iconName: 'extension',
+          puzzles: entry.value,
+        ));
+      }
+    }
+
     return result;
+  }
+
+  /// Fetches and registers dynamic level packs from LiveOps CMS.
+  Future<void> loadLiveOpsPuzzles(
+    LiveOpsConfigService liveOps, {
+    List<String> packIds = const ['season_1_logic_grids'],
+  }) async {
+    for (final packId in packIds) {
+      try {
+        final packData = await liveOps.getPuzzleLevelPack(packId);
+        final levels = packData['levels'] as List<dynamic>?;
+        if (levels != null) {
+          final newPuzzles = <PuzzleDefinition>[];
+          for (final raw in levels) {
+            if (raw is Map) {
+              final puzzle = _parseLiveOpsPuzzle(packId, raw.cast<String, dynamic>());
+              if (puzzle != null) {
+                newPuzzles.add(puzzle);
+              }
+            }
+          }
+          if (newPuzzles.isNotEmpty) {
+            registerPuzzles(newPuzzles);
+          }
+        }
+      } catch (_) {
+        // Fallback gracefully on parsing error
+      }
+    }
+  }
+
+  static List<int> _cluesForLine(List<int> line) {
+    final clues = <int>[];
+    int run = 0;
+    for (final val in line) {
+      if (val == 1) {
+        run++;
+      } else if (run > 0) {
+        clues.add(run);
+        run = 0;
+      }
+    }
+    if (run > 0) clues.add(run);
+    return clues.isEmpty ? [0] : clues;
+  }
+
+  PuzzleDefinition? _parseLiveOpsPuzzle(String packId, Map<String, dynamic> raw) {
+    if (raw.containsKey('rowHints') && raw.containsKey('columnHints')) {
+      return PuzzleDefinition.fromJson(raw);
+    }
+
+    if (raw.containsKey('solutionRows')) {
+      final rawRows = (raw['solutionRows'] as List)
+          .map((r) => (r as List).map((c) => (c as num).toInt()).toList())
+          .toList();
+      final h = rawRows.length;
+      if (h == 0) return null;
+      final w = rawRows[0].length;
+      if (w == 0) return null;
+
+      final rowHints = rawRows.map(_cluesForLine).toList();
+      final columnHints = <List<int>>[];
+      for (int c = 0; c < w; c++) {
+        final colLine = <int>[];
+        for (int r = 0; r < h; r++) {
+          colLine.add(rawRows[r][c]);
+        }
+        columnHints.add(_cluesForLine(colLine));
+      }
+
+      final encodedSolution = rawRows
+          .map((r) => r.map((c) => c == 1 ? '1' : '.').join())
+          .join();
+
+      final pId = raw['puzzleId'] as String? ??
+          raw['id'] as String? ??
+          '${packId}_lvl_${raw['levelNumber'] ?? 1}';
+      final title = raw['title'] as String? ?? 'Logic Grid ${raw['levelNumber'] ?? 1}';
+      final category = raw['category'] as String? ?? 'liveops';
+      final difficulty = PuzzleDifficulty.fromString(
+        raw['difficulty'] as String? ?? 'easy',
+      );
+
+      final checksum = PuzzleDefinition.calculateChecksum(
+        id: pId,
+        width: w,
+        height: h,
+        rowHints: rowHints,
+        columnHints: columnHints,
+        encodedSolution: encodedSolution,
+      );
+
+      return PuzzleDefinition(
+        id: pId,
+        title: title,
+        category: category,
+        width: w,
+        height: h,
+        rowHints: rowHints,
+        columnHints: columnHints,
+        encodedSolution: encodedSolution,
+        difficulty: difficulty,
+        checksum: checksum,
+      );
+    }
+
+    return null;
   }
 
   /// Selects deterministic Daily Nonogram based on date string (YYYY-MM-DD).
