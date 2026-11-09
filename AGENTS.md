@@ -22,3 +22,19 @@
 - Her bilginin kanonik belgesini güncelle; diğer belgelerden bağlantı ver. Mevcut kaynakları uzlaştır, tarihsel sonuçları yeni kanıt gibi sunma.
 - Devirde repository/branch/HEAD, başlangıç-bitiş Git durumu, değişen dosyalar, kontroller ve sınırları, açık kararlar/engeller ile Continuity Checkpoint'i bildir.
 - Başka sohbete mesaj göndermek için kullanıcı yetkisi gerekir. Kullanıcı aracılığıyla aktarılması istenen raporu taşınabilir biçimde hazırla.
+
+## Asset'ler (DenoGames Mühendislik Standartları)
+
+- Kanonik standart: game-asset-toolkit `docs/standards/denogames-asset-standard.md`
+  (ADR 0021). Bu repository standarda yalnız referans verir; içeriğini kopyalamaz.
+- Bu oyun henüz toolkit asset manifesti (`asset_manifest.yaml`) kullanmıyor.
+  Görsel/ses asset'i eklenecekse önce standarttaki akışla benimse
+  (`game-assets init`, `manifest add`, `runtime export`, `tool/verify_assets.sh`);
+  ikinci bir asset kaydı, JSON listesi veya Dart yol haritası kurma.
+- Widget'larda asset yolu sabitleme; kararlı semantik id ile çöz
+  (studio_core_sdk `StudioAssetResolver`).
+- Eksik asset hata değildir: bildirilen fallback gösterilir. Asset onaylanıp
+  yayınlanana kadar prosedürel fallback'leri koru.
+- Asset onaylama/reddetme, sağlayıcı etkinleştirme, `--live` veya ücretli üretim
+  kendi kararınla yapılmaz; aday, journal ve review kayıtları silinmez.
+- Offline doğrula: `enableCloudSync: false` ve ağ yokken oyun açılıp çizilmeli.
