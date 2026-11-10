@@ -805,9 +805,11 @@ packages:
   studio_core_sdk:
     dependency: "direct main"
     description:
-      path: "../studio-core-sdk"
-      relative: true
-    source: path
+      path: "."
+      ref: "78f4c9257f124f2c60e0e4e6992727bbf6a71881"
+      resolved-ref: "78f4c9257f124f2c60e0e4e6992727bbf6a71881"
+      url: "https://github.com/denogames/studio-core-sdk.git"
+    source: git
     version: "1.0.0"
   term_glyph:
     dependency: transitive

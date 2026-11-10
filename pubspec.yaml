@@ -31,7 +31,9 @@ dependencies:
   studio_core_sdk:
     git:
       url: https://github.com/denogames/studio-core-sdk.git
-      ref: feat/offline-core-hardening-v1
+      # studio-core-sdk master (runtime asset resolver). Exact commit; the
+      # previous ref, feat/offline-core-hardening-v1, no longer exists.
+      ref: 78f4c9257f124f2c60e0e4e6992727bbf6a71881
   flutter:
     sdk: flutter
 
