@@ -95,8 +95,8 @@ Tüm kayıtlar **açık**. “Statik gözlem” kaynakta görülen durumu, “ol
   - Uzak içerik backend sırrı almaz (`NONOGRAM_CONTENT_HMAC_KEY` kaldırıldı); release build'de koşulsuz kapalı.
   - `.github/workflows/ci.yml`: bağımlılık, `flutter analyze`, `flutter test`; özel SDK için salt okunur `STUDIO_CORE_SDK_READ_TOKEN`; yalnız master push ve elle çalıştırma.
 - **Doğrulama (yerel):** analyze temiz; 57 passed / 1 skipped; sırsız canlı backend testi geçti ([test_report](test_report.md#entegrasyon-stabilizasyonu--11-kasım-2026)).
-- **CI durumu:** Workflow eklendi (`8a6fa05`); başarılı GitHub Actions çalıştırması **henüz yok**. İlk çalıştırma [42983959493](https://github.com/denogames/nonogram/actions/runs/42983959493) beklendiği gibi bağımlılık adımında açık hata mesajıyla durdu (analyze/test atlandı): `STUDIO_CORE_SDK_READ_TOKEN` tanımlı değil. Organizasyon politikası studio-core-sdk için deploy key'leri kapatıyor ve `xbersoy` CLI kimliği kapsamı daraltılmış token oluşturamaz. Gerekli kullanıcı/kurucu işlemi: yalnız `denogames/studio-core-sdk` için Contents: Read-only fine-grained token (veya organizasyonda deploy key izni) ve sırrın `denogames/nonogram`a eklenmesi.
-- **Açık / release engelleri:** üretim içerik yolu seçimi (D-008 Proposed), deploy edilmiş backend, release'te özelliği açma kararı, Android'de gerçek çalıştırma.
+- **CI durumu:** **Geçti.** Kullanıcı `STUDIO_CORE_SDK_READ_TOKEN` sırrını (yalnız `denogames/studio-core-sdk`, Contents: Read-only) ekledikten sonra `10dbfe5` üzerinde elle başlatılan çalıştırma [42987227258](https://github.com/denogames/nonogram/actions/runs/42987227258) başarılı: bağımlılık, `flutter analyze` (No issues found), `flutter test` (57 passed, 1 skipped). Log'da token yalnız `***` olarak görünür. Önceki iki çalıştırma (42983959493, 42984129315) sır yokken bağımlılık adımında beklendiği gibi durmuştu.
+- **Açık / release engelleri:** üretim içerik yolu seçimi (D-008 Proposed), deploy edilmiş backend, release'te özelliği açma kararı, Android'de gerçek çalıştırma. CI artık engel değil.
 
 ## Continuity Checkpoint (11 Kasım 2026) — Content Studio entegrasyonu
 

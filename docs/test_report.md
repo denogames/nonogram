@@ -21,7 +21,7 @@ Yeni regresyon testleri (`saved boards follow puzzle content` grubu ve bayrak te
 - **Eski biçim:** parmak izsiz eski kayıt boyutu uyarsa geri yüklenir; bozuk önek, yanlış boyut, başka puzzle'ın parmak izi ve tamamlanmış puzzle geri yüklenmez.
 - **Güvenlik:** bayrak varsayılan kapalı, release build'de her koşulda kapalı; `lib/` içinde `NONOGRAM_CONTENT_HMAC_KEY` yok.
 
-CI: `.github/workflows/ci.yml` (push → master, elle çalıştırma; pull request tetikleyicisi yok). Gerçek GitHub Actions sonucu [project_status](project_status.md#continuity-checkpoint-11-kasım-2026--entegrasyon-stabilizasyonu) içinde kayıtlıdır.
+CI: `.github/workflows/ci.yml` (push → master, elle çalıştırma; pull request tetikleyicisi yok). İlk başarılı GitHub Actions çalıştırması: [42987227258](https://github.com/denogames/nonogram/actions/runs/42987227258) (`10dbfe5`; analyze temiz, 57 passed, 1 skipped). Ayrıntı [project_status](project_status.md#continuity-checkpoint-11-kasım-2026--entegrasyon-stabilizasyonu) içinde.
 
 ---
 
