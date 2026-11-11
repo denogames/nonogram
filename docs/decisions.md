@@ -81,3 +81,11 @@ Durumlar ilgili nesneye ve kapsama bağlanır; birbirinin yerine geçmez.
 - **Karar / uygulama:** Oyun backend sırrını almaz; `NONOGRAM_CONTENT_HMAC_KEY` kaldırıldı, okuyucu sır olmayan sabit `nonogram-content-reader-public` ile imzalar. Release build'de uzak içerik koşulsuz kapalıdır (`kReleaseMode`). Kayıtlı tahta, puzzle içerik parmak iziyle (checksum) bağlanır; farklı içerikte geri yüklenmez, hiçbir kayıt silinmez. Önemli ölçüde farklı resim yeni `content_id` almalıdır.
 - **Üretim için önerilen en küçük yol (Proposed, onay bekliyor):** (1) Mevcut misafir oturumu + içerik okuma, sırsız; backend tarafında bu rotaların HMAC'siz kalması sözleşme olarak belgelenir, misafir girişine ayrı rate limit ve izleme eklenir. (2) Uzun vadede yayınlanan payload'ların oturumsuz, CDN üzerinden herkese açık sunulması (yeni backend yeteneği; bu artımda yok). Hangi yolun seçileceği ve release'te özelliğin açılması kullanıcı kararıdır.
 - **Durum:** Sır kaldırma, release kilidi ve tahta uyumu **Implemented & Verified (geliştirme)**; üretim yolu **Proposed**.
+
+## D-009 — Yarım puzzle'ın otomatik kaydı (N-1)
+
+- **Sahip:** Kullanıcı / kurucu; NONOGRAM-FIX-N1 talimatı (11 Kasım 2026), "APPROVED. Fix N-1 now within Nonogram HQ ownership."
+- **Kaynak (bulgu):** Android kabul taraması (studio-core-backend `docs/platform/PLATFORM_V1.md` madde 18): yarım tahta yalnız puzzle ekranı kapanırken (`dispose`) kaydediliyordu; ekran açıkken uygulama öldürülünce deneme kayboluyordu. Platforma özgü değil.
+- **Karar / uygulama (Engineering, kullanıcı onaylı kapsam):** Her tahta değişikliğinden (hücre, temizleme, sürükleme, geri al/yinele, ipucu, yeniden başlatma) sonra mevcut kasa + SQLite kaydı yazılır (`PuzzleAutosave`). Yazmalar sıralı ve tek tektir; biri sürerken yalnız en yeni durum bekler. Başarısız yazma bir sonraki değişiklikte veya flush'ta yeniden denenir, döngüye girmez. Uygulama ön plandan çıkınca (`AppLifecycleListener`) güncel süreyle flush edilir. Tamamlanınca bekleyen yarım durum düşürülür ve süren yazma beklenir; tamamlanma kaydından sonra yarım kayıt yazılamaz. Daha önce tamamlanmış puzzle'ın tekrar oynanışı yarım kayıt yazmaz, böylece tamamlanma/yıldız korunur (önceki sürüm ekrandan çıkarken bunu ezebiliyordu). İçerik parmak izi kuralı (D-008) aynen geçerlidir.
+- **Durum:** **Implemented & Verified (geliştirme)**.
+

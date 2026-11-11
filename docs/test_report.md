@@ -1,5 +1,41 @@
 # Test Verification Report
 
+## N-1 otomatik kayıt — 11 Kasım 2026
+
+- **Kapsam:** [D-009](decisions.md#d-009--yarım-puzzleın-otomatik-kaydı-n-1). Başlangıç HEAD `a4209d4`.
+- **Ortam:** macOS, Flutter 3.47.5; Android emülatörü Pixel 10 AVD, Android 17 (API 37), arm64. Uzak içerik için yerel tek kullanımlık studio-core-backend `f22eb2e` (`adb reverse` + istek sayan proxy). Hiçbir şey deploy edilmedi.
+
+| Komut | Sonuç |
+| --- | --- |
+| `flutter analyze` | No issues found |
+| `flutter test` | 70 passed, 1 skipped (önceki 57) |
+| `flutter test test/storage/puzzle_autosave_test.dart` | 10/10 |
+| `flutter test test/widget/puzzle_autosave_screen_test.dart` | 3/3 (gerçek `PuzzleScreen`, parmak hareketiyle) |
+
+Regresyon testleri:
+
+- **Tek hamle:** ekran açıkken kasa ve SQLite'ta (ekrandan çıkmadan). Bu kayıt kaldırıldığında test başarısız olur (kontrol edildi).
+- **Hızlı hamleler:** aynı anda tek yazma, ara durumlar atlanır, en yeni tahta en son yazılır.
+- **Yeniden açılış:** dosya veritabanı + kasa yeniden açılınca son tahta, süre, hata ve ipucu; kasa kaybolursa SQLite'tan.
+- **Arka plan:** `inactive → hidden → paused` geçişi hamlesiz geçen süreyi kaydeder.
+- **Başarısız yazma:** saklanır, flush'ta yeniden denenir, döngü yok; daha yeni hamle eskisinin yerine geçer.
+- **Tamamlanma sırasında bekleyen yazma:** bekleyen düşer, süren yazma beklenir; sonrasında kayıt yazılmaz; ekranda tamamlanma, 3 yıldız, coin 100 → 145 korunur, yarım tahta geri gelmez.
+- **Tamamlanmış puzzle'ın tekrar oynanışı:** tamamlanma ve yıldız ezilmez.
+- **İçerik revizyonu (aynı id ve boyut, farklı çözüm):** eski tahta geri yüklenmez.
+- **Varsayılan (uzak içerik kapalı):** ekran testi boyunca `HttpClient` oluşturulmadı.
+
+### Gerçek uygulama (Android emülatörü)
+
+| Adım | Gözlem |
+| --- | --- |
+| Food → Coffee Mug (10×10), 8 hamle, ekranda `am force-stop` | Yeniden açılışta 8 hücre geri geldi, süre son hamleden (≈00:15) devam etti (00:16) |
+| Bulmaca tamamlandı (3 yıldız), tamamlanma ekranında `force-stop` | Food 1/3 ★3; coin 145; yeniden açılışta tahta boş (yarım kayıt yok) |
+| Tamamlanmış puzzle'da 1 hamle, `force-stop` | Food 1/3 ★3 korundu |
+| Animals → Cat: 1 hamle, ≈12 sn bekleme, Home tuşu, `force-stop` | Süre 00:16'dan devam etti (hamle anı ≈00:02): ön plandan çıkış kaydı çalıştı |
+| Uzak içerik açık build: tam 3 istek (misafir, katalog, `seasonal_picks`); Studio Tree'de 9 hücre, `force-stop`, backend kesik yeniden açılış | 9 hücre ve süre geri geldi (çevrimdışı, 0 istek); tamamlandı: Seasonal 1/3 ★3, coin 190 |
+
+---
+
 ## Entegrasyon stabilizasyonu — 11 Kasım 2026
 
 - **Kapsam:** PLATFORM-V1-010, [D-008](decisions.md#d-008--üretim-misafir-kimliği-güvenliği-ve-kayıtlı-tahta-uyumu). Repository `denogames/nonogram`, branch `master`, başlangıç HEAD `bdeff1de2acf6f9ed1ae519a56e779202046c1c1`.

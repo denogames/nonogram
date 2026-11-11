@@ -86,6 +86,17 @@ Tüm kayıtlar **açık**. “Statik gözlem” kaynakta görülen durumu, “ol
 - Teslim kabulü D-002, M1 kapsam/önceliği D-003, günlük seri D-004 ve üretim/yol haritası kararları D-005 içinde izlenir.
 - Sonraki iş **[Proposed M1 — Startup & Persistence Verification](roadmap.md#proposed-m1--startup--persistence-verification)**; henüz yürütülmedi.
 
+## Continuity Checkpoint (11 Kasım 2026) — N-1 otomatik kayıt
+
+- **Yer / Git:** `denogames/nonogram`, branch `master`; başlangıç HEAD `a4209d4` (origin ile eşit, temiz).
+- **Kullanıcı kararı:** NONOGRAM-FIX-N1 onaylandı ([D-009](decisions.md#d-009--yarım-puzzleın-otomatik-kaydı-n-1)).
+- **Uygulanan:**
+  - `lib/core/storage/puzzle_autosave.dart`: `UnfinishedAttempt` (anlık görüntü, `SavedBoard` biçimi) ve `PuzzleAutosave` (sıralı, en-yeni-kazanır yazıcı; başarısız yazmayı saklar; `close` tamamlanmada).
+  - `PuzzleScreen`: her değişiklikte kayıt, yeniden başlatmada kayıt, ön plandan çıkınca flush, tamamlanmada önce `close`; önceden tamamlanmış puzzle'da yarım kayıt yok. Eski yalnız-`dispose` kaydı kaldırıldı. Backend ve SDK değişmedi.
+- **Doğrulama:** analyze temiz; 70 passed / 1 skipped (önceki 57); Android emülatöründe gerçek uygulama ([test_report](test_report.md#n-1-otomatik-kayıt--11-kasım-2026)).
+- **CI durumu:** bekleniyor; çalıştırmadan sonra yazılacak.
+- **Kalan sınırlar:** son hamleden sonraki yazma bitmeden süreç ölürse o son hamle kaybolabilir (önceki kayıt geçerli kalır); süre, hamle veya ön plandan çıkış anındaki değerdir (ani ölümde son hamleden sonraki saniyeler sayılmaz); kasa ve SQLite ayrı yazmalardır, kasa önce okunur. Tamamlanmış puzzle'ın tekrar oynanışı devam ettirilemez. Ana ekrandaki coin sayısı bir sonraki açılışta güncellenir (mevcut davranış).
+
 ## Continuity Checkpoint (11 Kasım 2026) — Entegrasyon stabilizasyonu
 
 - **Yer / Git:** `/Users/burak.ersoy/burak/projects/denogames/nonogram`; branch `master`; başlangıç HEAD `bdeff1de2acf6f9ed1ae519a56e779202046c1c1` (origin ile eşit, temiz).

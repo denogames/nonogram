@@ -8,6 +8,7 @@ import '../../../core/monetization/ads/ad_manager.dart';
 import '../../../core/monetization/economy/economy_manager.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/storage/database/app_database.dart';
+import '../../../core/storage/puzzle_autosave.dart';
 import '../../../core/storage/saved_board.dart';
 import '../../../core/storage/vault/game_state_vault.dart';
 import '../../../core/theme/app_theme.dart';
@@ -43,18 +44,43 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
   bool _showRevealDialog = false;
   bool _isLoading = true;
 
+  /// Saves the unfinished attempt after every change (N-1). Disabled until the puzzle is
+  /// loaded, and for a puzzle completed before (a replay never overwrites its completion).
+  PuzzleAutosave _autosave = PuzzleAutosave((_) async {}, enabled: false);
+  AppLifecycleListener? _lifecycle;
+
   @override
   void initState() {
     super.initState();
+    // Leaving the foreground flushes the newest state, with the current elapsed time.
+    _lifecycle = AppLifecycleListener(onStateChange: (state) {
+      if (state != AppLifecycleState.resumed) _saveNow(flush: true);
+    });
     _loadPuzzleAndSession();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _lifecycle?.dispose();
     _timerNotifier.dispose();
-    _saveProgressIfUnfinished();
+    _saveNow(flush: true);
     super.dispose();
+  }
+
+  /// Queues the current unfinished board (no-op once completed, or for a replay).
+  void _saveNow({bool flush = false}) {
+    final engine = _engine;
+    final puzzle = _puzzle;
+    if (engine == null || puzzle == null || engine.isCompleted) return;
+    _autosave.save(UnfinishedAttempt.of(
+      puzzle,
+      cells: engine.serializeBoardState(),
+      mistakes: engine.mistakes,
+      hintsUsed: engine.hintsUsed,
+      elapsedSeconds: engine.elapsedSeconds,
+    ));
+    if (flush) unawaited(_autosave.flush());
   }
 
   Future<void> _loadPuzzleAndSession() async {
@@ -82,11 +108,15 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
     // 1. Resume an unfinished attempt (crash-safe vault first, then SQLite), only when it was
     //    saved on this puzzle's current content (see SavedBoard).
     final vault = GameStateVault.instance;
+    final database = ref.read(databaseProvider);
+    final vaultState = vault.isInitialized ? vault.getPuzzleState(puzzle.id) : null;
+    final databaseRow = await database.getProgress(puzzle.id);
     final attempt = ResumableAttempt.choose(
       puzzle,
-      vault: vault.isInitialized ? vault.getPuzzleState(puzzle.id) : null,
-      database: await ref.read(databaseProvider).getProgress(puzzle.id),
+      vault: vaultState,
+      database: databaseRow,
     );
+    final completedBefore = (vaultState?.isCompleted ?? false) || (databaseRow?.isCompleted ?? false);
     if (attempt != null) {
       engine.restoreSession(
         encodedBoard: attempt.cells,
@@ -97,6 +127,10 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
     }
 
     if (mounted) {
+      _autosave = PuzzleAutosave(
+        (a) => UnfinishedAttempt.writeTo(a, vault: vault, database: database),
+        enabled: !completedBefore,
+      );
       _timerNotifier.value = engine.elapsedSeconds;
       setState(() {
         _puzzle = puzzle;
@@ -128,47 +162,10 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
     });
   }
 
-  Future<void> _saveProgressIfUnfinished() async {
-    if (_engine == null || _puzzle == null || _engine!.isCompleted) return;
-
-    final boardStr = SavedBoard.encode(_puzzle!, _engine!.serializeBoardState());
-    final now = DateTime.now();
-
-    // 1. Persist to crash-safe vault
-    final vault = GameStateVault.instance;
-    if (vault.isInitialized) {
-      await vault.savePuzzleState(
-        SavedPuzzleState(
-          puzzleId: _puzzle!.id,
-          isCompleted: false,
-          stars: 0,
-          bestTimeSeconds: 0,
-          lastPlayed: now,
-          savedBoardState: boardStr,
-          savedMistakes: _engine!.mistakes,
-          savedHintsUsed: _engine!.hintsUsed,
-          savedElapsedSeconds: _engine!.elapsedSeconds,
-        ),
-      );
-    }
-
-    // 2. Persist to SQLite
-    final db = ref.read(databaseProvider);
-    await db.saveProgress(
-      PuzzleProgressEntriesCompanion(
-        puzzleId: drift.Value(_puzzle!.id),
-        isCompleted: const drift.Value(false),
-        lastPlayed: drift.Value(now),
-        savedBoardState: drift.Value(boardStr),
-        savedMistakes: drift.Value(_engine!.mistakes),
-        savedHintsUsed: drift.Value(_engine!.hintsUsed),
-        savedElapsedSeconds: drift.Value(_engine!.elapsedSeconds),
-      ),
-    );
-  }
-
   Future<void> _handlePuzzleCompletion() async {
     _timer?.cancel();
+    // No unfinished snapshot may be written after the completion record.
+    await _autosave.close();
 
     final db = ref.read(databaseProvider);
     final analytics = ref.read(analyticsProvider);
@@ -275,7 +272,10 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
     setState(() {});
     if (_engine != null && _engine!.isCompleted) {
       _handlePuzzleCompletion();
-    } else if (_engine != null && _engine!.isFailed) {
+      return;
+    }
+    _saveNow();
+    if (_engine != null && _engine!.isFailed) {
       _handlePuzzleFailed();
     }
   }
@@ -447,6 +447,7 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
                 );
                 _timerNotifier.value = 0;
               });
+              _saveNow(); // a restart replaces the saved board too
             },
           ),
         ],
