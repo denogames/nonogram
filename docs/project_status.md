@@ -94,7 +94,7 @@ Tüm kayıtlar **açık**. “Statik gözlem” kaynakta görülen durumu, “ol
   - `lib/core/storage/puzzle_autosave.dart`: `UnfinishedAttempt` (anlık görüntü, `SavedBoard` biçimi) ve `PuzzleAutosave` (sıralı, en-yeni-kazanır yazıcı; başarısız yazmayı saklar; `close` tamamlanmada).
   - `PuzzleScreen`: her değişiklikte kayıt, yeniden başlatmada kayıt, ön plandan çıkınca flush, tamamlanmada önce `close`; önceden tamamlanmış puzzle'da yarım kayıt yok. Eski yalnız-`dispose` kaydı kaldırıldı. Backend ve SDK değişmedi.
 - **Doğrulama:** analyze temiz; 70 passed / 1 skipped (önceki 57); Android emülatöründe gerçek uygulama ([test_report](test_report.md#n-1-otomatik-kayıt--11-kasım-2026)).
-- **CI durumu:** bekleniyor; çalıştırmadan sonra yazılacak.
+- **CI durumu:** **Geçti.** `aab62c0` üzerinde [43025698529](https://github.com/denogames/nonogram/actions/runs/43025698529): bağımlılık (salt okunur `STUDIO_CORE_SDK_READ_TOKEN`), `flutter analyze` (No issues found), `flutter test` (70 passed, 1 skipped); log'da token yok.
 - **Kalan sınırlar:** son hamleden sonraki yazma bitmeden süreç ölürse o son hamle kaybolabilir (önceki kayıt geçerli kalır); süre, hamle veya ön plandan çıkış anındaki değerdir (ani ölümde son hamleden sonraki saniyeler sayılmaz); kasa ve SQLite ayrı yazmalardır, kasa önce okunur. Tamamlanmış puzzle'ın tekrar oynanışı devam ettirilemez. Ana ekrandaki coin sayısı bir sonraki açılışta güncellenir (mevcut davranış).
 
 ## Continuity Checkpoint (11 Kasım 2026) — Entegrasyon stabilizasyonu
