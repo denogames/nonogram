@@ -1,7 +1,13 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- IapManager always runs in mock mode (app_providers.dart) and no store
+         call is reachable, so drop the permissions the in_app_purchase plugin
+         merges in. Remove these two lines when real purchases ship. -->
+    <uses-permission android:name="com.android.vending.BILLING" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
     <application
-        android:label="nonogram"
+        android:label="Nonogram"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

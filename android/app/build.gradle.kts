@@ -1,7 +1,17 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+val hasKeystore = keystorePropertiesFile.exists()
+if (hasKeystore) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -29,12 +39,47 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            if (hasKeystore) {
+                val keyAliasVal = keystoreProperties.getProperty("keyAlias")
+                val keyPasswordVal = keystoreProperties.getProperty("keyPassword")
+                val storeFileVal = keystoreProperties.getProperty("storeFile")
+                val storePasswordVal = keystoreProperties.getProperty("storePassword")
+
+                if (keyAliasVal.isNullOrEmpty() || keyPasswordVal.isNullOrEmpty() ||
+                    storeFileVal.isNullOrEmpty() || storePasswordVal.isNullOrEmpty()) {
+                    throw GradleException("Release signing configuration in key.properties is incomplete.")
+                }
+                val resolvedStoreFile = rootProject.file(storeFileVal)
+                if (!resolvedStoreFile.exists()) {
+                    throw GradleException("Keystore file '$storeFileVal' specified in key.properties does not exist.")
+                }
+                keyAlias = keyAliasVal
+                keyPassword = keyPasswordVal
+                storeFile = resolvedStoreFile
+                storePassword = storePasswordVal
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            if (hasKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = null
+            }
         }
+    }
+}
+
+gradle.taskGraph.whenReady {
+    val releaseTasks = allTasks.filter { it.name.contains("Release", ignoreCase = true) }
+    if (releaseTasks.isNotEmpty() && !hasKeystore) {
+        throw GradleException(
+            "Release build rejected: 'key.properties' is missing. A secure release keystore configuration is required; debug signing fallback is strictly prohibited."
+        )
     }
 }
 
