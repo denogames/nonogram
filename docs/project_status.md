@@ -92,7 +92,7 @@ Tüm kayıtlar **açık**. “Statik gözlem” kaynakta görülen durumu, “ol
 - **Kullanıcı kararı:** NONOGRAM-FIX-N2 ([D-010](decisions.md#d-010--tekrar-oynanışta-ödül-ve-en-iyi-sonuç-n-2)).
 - **Uygulanan:** `lib/core/storage/completion_record.dart` (tamamlanma kaydı, ilk tamamlanma kararı, en iyi yıldız/süre); `PuzzleScreen` coin'i yalnız ilk tamamlanmada verir, deneme başına tek tamamlanma işler, tamamlanmış puzzle'ı yeni tahtayla açar, günlük kaydı bir kez yazar; `EconomyManager` bakiye değişiminde bildirir, ana ekran göstergesi dinler. Backend ve SDK değişmedi.
 - **Doğrulama:** analyze temiz; 83 passed / 1 skipped (önceki 70); Android emülatöründe gerçek uygulama ([test_report](test_report.md#n-2-tekrar-oynanış-ödülü--11-kasım-2026)).
-- **CI durumu:** bekleniyor; çalıştırmadan sonra yazılacak.
+- **CI durumu:** **Geçti.** `1a2dfb7` üzerinde [43031135306](https://github.com/denogames/nonogram/actions/runs/43031135306): `flutter analyze` (No issues found), `flutter test` (83 passed, 1 skipped); log'da token yok.
 - **Kalan sınırlar:** kayıt ile coin arasında ani ölümde o ödül kaybolabilir (çift ödeme yok). Önceki sürümlerin fazladan ödediği coin'ler geri alınmadı. Günlük seri kuralı D-004 açık.
 
 ## Continuity Checkpoint (11 Kasım 2026) — N-1 otomatik kayıt
