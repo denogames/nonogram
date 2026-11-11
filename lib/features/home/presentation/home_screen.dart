@@ -52,23 +52,26 @@ class HomeScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: colors.gridBorder.withOpacity(0.2)),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.monetization_on_rounded, color: Colors.amber, size: 18),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${economy.coins}',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(Icons.lightbulb_rounded, color: colors.accent, size: 18),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${economy.hintsRemaining}',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary),
-                    ),
-                  ],
+                child: ListenableBuilder(
+                  listenable: economy.changes,
+                  builder: (context, _) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.monetization_on_rounded, color: Colors.amber, size: 18),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${economy.coins}',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.lightbulb_rounded, color: colors.accent, size: 18),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${economy.hintsRemaining}',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

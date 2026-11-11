@@ -7,6 +7,7 @@ import 'package:studio_core_sdk/studio_core_sdk.dart';
 import '../../../core/monetization/ads/ad_manager.dart';
 import '../../../core/monetization/economy/economy_manager.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/storage/completion_record.dart';
 import '../../../core/storage/database/app_database.dart';
 import '../../../core/storage/puzzle_autosave.dart';
 import '../../../core/storage/saved_board.dart';
@@ -48,6 +49,10 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
   /// loaded, and for a puzzle completed before (a replay never overwrites its completion).
   PuzzleAutosave _autosave = PuzzleAutosave((_) async {}, enabled: false);
   AppLifecycleListener? _lifecycle;
+
+  /// The attempt whose completion is being or was recorded: a duplicate callback for the same
+  /// attempt does nothing (a replay from the dialog is a new attempt).
+  PuzzleEngine? _completionHandledFor;
 
   @override
   void initState() {
@@ -111,12 +116,16 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
     final database = ref.read(databaseProvider);
     final vaultState = vault.isInitialized ? vault.getPuzzleState(puzzle.id) : null;
     final databaseRow = await database.getProgress(puzzle.id);
-    final attempt = ResumableAttempt.choose(
-      puzzle,
-      vault: vaultState,
-      database: databaseRow,
-    );
-    final completedBefore = (vaultState?.isCompleted ?? false) || (databaseRow?.isCompleted ?? false);
+    final completedBefore = CompletionRecords.wasCompleted(vaultState, databaseRow);
+    // A completed puzzle always opens as a fresh replay; an unfinished attempt left by an
+    // earlier version on a completed puzzle is not resumed.
+    final attempt = completedBefore
+        ? null
+        : ResumableAttempt.choose(
+            puzzle,
+            vault: vaultState,
+            database: databaseRow,
+          );
     if (attempt != null) {
       engine.restoreSession(
         encodedBoard: attempt.cells,
@@ -163,6 +172,9 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
   }
 
   Future<void> _handlePuzzleCompletion() async {
+    final engine = _engine;
+    if (engine == null || identical(_completionHandledFor, engine)) return;
+    _completionHandledFor = engine;
     _timer?.cancel();
     // No unfinished snapshot may be written after the completion record.
     await _autosave.close();
@@ -172,60 +184,54 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
     final adManager = ref.read(adManagerProvider);
 
     // 1. Calculate Stars
-    final mistakes = _engine!.mistakes;
-    final hints = _engine!.hintsUsed;
+    final mistakes = engine.mistakes;
+    final hints = engine.hintsUsed;
     final stars = (mistakes == 0 && hints == 0) ? 3 : (mistakes <= 1 && hints <= 2 ? 2 : 1);
     final now = DateTime.now();
 
-    // 2. Persist completion to crash-safe vault
-    final vault = GameStateVault.instance;
-    if (vault.isInitialized) {
-      await vault.savePuzzleState(
-        SavedPuzzleState(
-          puzzleId: _puzzle!.id,
-          isCompleted: true,
-          stars: stars,
-          bestTimeSeconds: _engine!.elapsedSeconds,
-          lastPlayed: now,
-          savedBoardState: null,
-        ),
-      );
-    }
-
-    // 3. Persist completion in DB
-    await db.saveProgress(
-      PuzzleProgressEntriesCompanion(
-        puzzleId: drift.Value(_puzzle!.id),
-        isCompleted: const drift.Value(true),
-        stars: drift.Value(stars),
-        bestTimeSeconds: drift.Value(_engine!.elapsedSeconds),
-        lastPlayed: drift.Value(now),
-        savedBoardState: const drift.Value(null),
-      ),
+    // 2-3. Completion record (vault + DB): never reverts, keeps the best stars and time, and
+    //      says whether this is the first completion. Written before any coin is credited.
+    final outcome = await CompletionRecords.record(
+      puzzleId: _puzzle!.id,
+      stars: stars,
+      timeSeconds: engine.elapsedSeconds,
+      vault: GameStateVault.instance,
+      database: db,
+      at: now,
     );
 
     // If Daily, record daily entry
     if (widget.isDaily) {
       final dateKey = '${now.year}-${now.month}-${now.day}';
-      await db.saveDaily(
-        DailyPuzzleEntriesCompanion(
-          dateKey: drift.Value(dateKey),
-          puzzleId: drift.Value(_puzzle!.id),
-          isCompleted: const drift.Value(true),
-          timeSeconds: drift.Value(_engine!.elapsedSeconds),
-          completedAt: drift.Value(DateTime.now()),
-        ),
-      );
+      // One record per date: a replay keeps the first completion time and only improves the time.
+      final existing = await db.getDaily(dateKey);
+      final time = engine.elapsedSeconds;
+      if (existing != null && existing.isCompleted) {
+        if (existing.timeSeconds <= 0 || time < existing.timeSeconds) {
+          await (db.update(db.dailyPuzzleEntries)..where((t) => t.dateKey.equals(dateKey)))
+              .write(DailyPuzzleEntriesCompanion(timeSeconds: drift.Value(time)));
+        }
+      } else {
+        await db.saveDaily(
+          DailyPuzzleEntriesCompanion(
+            dateKey: drift.Value(dateKey),
+            puzzleId: drift.Value(_puzzle!.id),
+            isCompleted: const drift.Value(true),
+            timeSeconds: drift.Value(time),
+            completedAt: drift.Value(DateTime.now()),
+          ),
+        );
+      }
       await analytics.logDailyChallengeCompleted(
         dateKey: dateKey,
         elapsedSeconds: _engine!.elapsedSeconds,
       );
     }
 
-    // 4. Grant Gameplay Coins via Single-Source Wallet
-    final economy = ref.read(economyManagerProvider);
-    final earnedCoins = stars * 15;
-    await economy.grantReward(addCoins: earnedCoins);
+    // 4. Gameplay coins via the single-source wallet: first completion only (stars × 15).
+    if (outcome.firstCompletion) {
+      await ref.read(economyManagerProvider).grantReward(addCoins: stars * 15);
+    }
 
     await analytics.logPuzzleCompleted(
       puzzleId: _puzzle!.id,
@@ -248,6 +254,8 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
             'puzzleId': _puzzle!.id,
             'category': _puzzle!.category,
             'stars': stars,
+            'bestStars': outcome.bestStars,
+            'firstCompletion': outcome.firstCompletion,
             'elapsedSeconds': _engine!.elapsedSeconds,
             'mistakes': mistakes,
             'hintsUsed': hints,

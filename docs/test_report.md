@@ -1,5 +1,33 @@
 # Test Verification Report
 
+## N-2 tekrar oynanış ödülü — 11 Kasım 2026
+
+- **Kapsam:** [D-010](decisions.md#d-010--tekrar-oynanışta-ödül-ve-en-iyi-sonuç-n-2). Başlangıç HEAD `c371074`.
+- **Ortam:** macOS, Flutter 3.47.5; Android emülatörü Pixel 10 AVD, Android 17 (API 37). Uzak içerik için yerel tek kullanımlık studio-core-backend `f22eb2e` (`adb reverse` + istek sayan proxy). Hiçbir şey deploy edilmedi.
+
+| Komut | Sonuç |
+| --- | --- |
+| `flutter analyze` | No issues found |
+| `flutter test` | 83 passed, 1 skipped (önceki 70) |
+| `flutter test test/storage/completion_record_test.dart` | 8/8 (dosya veritabanı + kasa) |
+| `flutter test test/widget/completion_reward_screen_test.dart` | 5/5 (gerçek ekranlar) |
+
+Regresyon testleri: ilk tamamlanma; daha kötü, daha iyi ve karışık tekrarlar (yıldız en yüksek, süre en hızlı, 0 sn geçersiz); 5 eşzamanlı tamamlanmadan tam biri ilk; yeniden açılıştan sonra tekrar ilk değil; önceki sürüm verileri (tamamlanmış, tekrarla yarıma dönmüş, yalnız kasada); yarım ama hiç tamamlanmamış puzzle ilk sayılır; ekranda ilk tamamlanma coin 100 → 145, diyalogdan tekrar 0 coin ve daha iyi süre; önceki sürümde tamamlanmış puzzle 0 coin; eski sürümün yarım tahtası tamamlanmış puzzle'da açılmaz; günlük: coin bir kez, kayıt ilk tamamlanmada, yavaş tekrar süreyi değiştirmez, hızlı tekrar iyileştirir; ana ekran coin göstergesi yeniden açılış olmadan güncellenir. Coin kapısı kaldırıldığında 3 test başarısız olur (kontrol edildi).
+
+### Gerçek uygulama (Android emülatörü)
+
+| Adım | Gözlem |
+| --- | --- |
+| Önceki sürüm (`a4209d4`): Apple iki kez çözüldü, sonra tekrarda 1 hamle ve çıkış | Coin 100 → 145 → **190** (çift ödeme, N-2); veritabanı tamamlanmış 3★ 9 sn, kasa yarım kayıtla ezilmiş |
+| Yeni sürüm aynı verilerle: Apple | Yeni tahtayla açıldı (eski yarım tahta yok); 24 sn'de çözüldü, tamamlanma ekranında `force-stop`, yeniden açılış: coin **190**, 3★ / 9 sn korundu |
+| Coffee Mug ilk tamamlanma (49 sn), Menu → ana ekran | Coin 190 → 235, ana ekran yeniden açılış olmadan **235** gösterdi |
+| Coffee Mug daha hızlı tekrar | En iyi süre 49 → 17 sn, coin 235 |
+| Günlük "Key" ilk tamamlanma, sonra hızlı tekrar | Coin 235 → 280; tarih kaydı 31 sn → 8 sn, `completed_at` değişmedi; coin 280 |
+| Uzak içerik açık build: Studio Heart ilk tamamlanma (tam 3 istek) | Coin 280 → 325 |
+| Backend kesik yeniden açılış, Studio Heart tekrar | 0 istek; coin 325; 3★ / 9 sn |
+
+---
+
 ## N-1 otomatik kayıt — 11 Kasım 2026
 
 - **Kapsam:** [D-009](decisions.md#d-009--yarım-puzzleın-otomatik-kaydı-n-1). Başlangıç HEAD `a4209d4`.

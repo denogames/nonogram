@@ -86,6 +86,15 @@ Tüm kayıtlar **açık**. “Statik gözlem” kaynakta görülen durumu, “ol
 - Teslim kabulü D-002, M1 kapsam/önceliği D-003, günlük seri D-004 ve üretim/yol haritası kararları D-005 içinde izlenir.
 - Sonraki iş **[Proposed M1 — Startup & Persistence Verification](roadmap.md#proposed-m1--startup--persistence-verification)**; henüz yürütülmedi.
 
+## Continuity Checkpoint (11 Kasım 2026) — N-2 tekrar oynanış ödülü
+
+- **Yer / Git:** `denogames/nonogram`, branch `master`; başlangıç HEAD `c371074` (origin ile eşit, temiz).
+- **Kullanıcı kararı:** NONOGRAM-FIX-N2 ([D-010](decisions.md#d-010--tekrar-oynanışta-ödül-ve-en-iyi-sonuç-n-2)).
+- **Uygulanan:** `lib/core/storage/completion_record.dart` (tamamlanma kaydı, ilk tamamlanma kararı, en iyi yıldız/süre); `PuzzleScreen` coin'i yalnız ilk tamamlanmada verir, deneme başına tek tamamlanma işler, tamamlanmış puzzle'ı yeni tahtayla açar, günlük kaydı bir kez yazar; `EconomyManager` bakiye değişiminde bildirir, ana ekran göstergesi dinler. Backend ve SDK değişmedi.
+- **Doğrulama:** analyze temiz; 83 passed / 1 skipped (önceki 70); Android emülatöründe gerçek uygulama ([test_report](test_report.md#n-2-tekrar-oynanış-ödülü--11-kasım-2026)).
+- **CI durumu:** bekleniyor; çalıştırmadan sonra yazılacak.
+- **Kalan sınırlar:** kayıt ile coin arasında ani ölümde o ödül kaybolabilir (çift ödeme yok). Önceki sürümlerin fazladan ödediği coin'ler geri alınmadı. Günlük seri kuralı D-004 açık.
+
 ## Continuity Checkpoint (11 Kasım 2026) — N-1 otomatik kayıt
 
 - **Yer / Git:** `denogames/nonogram`, branch `master`; başlangıç HEAD `a4209d4` (origin ile eşit, temiz).

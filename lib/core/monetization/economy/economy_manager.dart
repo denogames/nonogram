@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:studio_core_sdk/studio_core_sdk.dart';
 import '../../storage/database/app_database.dart';
 
@@ -16,7 +17,9 @@ class DailyRewardResult {
   });
 }
 
-class EconomyManager {
+/// Notifies listeners after every balance change it makes; [changes] also follows the SDK
+/// wallet, so the home coin and hint pill stays current without a relaunch.
+class EconomyManager extends ChangeNotifier {
   final AppDatabase db;
   final CurrencyWalletNotifier? wallet;
   PlayerEconomyEntry? _cachedEconomy;
@@ -41,7 +44,7 @@ class EconomyManager {
   String? get lastRewardDate => _cachedEconomy?.lastDailyRewardDate;
 
   Future<void> initialize() async {
-    _cachedEconomy = await db.getOrCreateEconomy();
+    await _reload();
 
     if (wallet != null) {
       final dbCoins = _cachedEconomy?.coins ?? 100;
@@ -58,7 +61,7 @@ class EconomyManager {
             hintsRemaining: Value(wHints),
           ),
         );
-        _cachedEconomy = await db.getOrCreateEconomy();
+        await _reload();
       } else {
         await wallet!.credit(StudioCurrencyIds.gold, dbCoins, source: 'init_sync');
         await wallet!.credit(StudioCurrencyIds.hints, dbHints, source: 'init_sync');
@@ -69,9 +72,11 @@ class EconomyManager {
     }
   }
 
+  @override
   void dispose() {
     wallet?.watchCurrency(StudioCurrencyIds.gold).removeListener(_syncDbFromWallet);
     wallet?.watchCurrency(StudioCurrencyIds.hints).removeListener(_syncDbFromWallet);
+    super.dispose();
   }
 
   void _syncDbFromWallet() {
@@ -94,6 +99,14 @@ class EconomyManager {
   static String _todayKey() {
     final now = DateTime.now();
     return '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Balance changes made here or in the SDK wallet.
+  Listenable get changes => wallet == null ? this : Listenable.merge([this, wallet!]);
+
+  Future<void> _reload() async {
+    _cachedEconomy = await db.getOrCreateEconomy();
+    notifyListeners();
   }
 
   bool isDailyRewardAvailable() {
@@ -139,7 +152,7 @@ class EconomyManager {
       ),
     );
 
-    _cachedEconomy = await db.getOrCreateEconomy();
+    await _reload();
 
     return DailyRewardResult(
       claimed: true,
@@ -165,7 +178,7 @@ class EconomyManager {
           hintsRemaining: Value(wallet!.getBalance(StudioCurrencyIds.hints)),
         ),
       );
-      _cachedEconomy = await db.getOrCreateEconomy();
+      await _reload();
       return true;
     }
 
@@ -179,7 +192,7 @@ class EconomyManager {
       ),
     );
 
-    _cachedEconomy = await db.getOrCreateEconomy();
+    await _reload();
     return true;
   }
 
@@ -210,7 +223,7 @@ class EconomyManager {
           hintsRemaining: Value(wallet!.getBalance(StudioCurrencyIds.hints)),
         ),
       );
-      _cachedEconomy = await db.getOrCreateEconomy();
+      await _reload();
       return true;
     }
 
@@ -224,7 +237,7 @@ class EconomyManager {
       ),
     );
 
-    _cachedEconomy = await db.getOrCreateEconomy();
+    await _reload();
     return true;
   }
 
@@ -250,6 +263,6 @@ class EconomyManager {
       ),
     );
 
-    _cachedEconomy = await db.getOrCreateEconomy();
+    await _reload();
   }
 }

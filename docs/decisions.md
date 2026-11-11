@@ -89,3 +89,11 @@ Durumlar ilgili nesneye ve kapsama bağlanır; birbirinin yerine geçmez.
 - **Karar / uygulama (Engineering, kullanıcı onaylı kapsam):** Her tahta değişikliğinden (hücre, temizleme, sürükleme, geri al/yinele, ipucu, yeniden başlatma) sonra mevcut kasa + SQLite kaydı yazılır (`PuzzleAutosave`). Yazmalar sıralı ve tek tektir; biri sürerken yalnız en yeni durum bekler. Başarısız yazma bir sonraki değişiklikte veya flush'ta yeniden denenir, döngüye girmez. Uygulama ön plandan çıkınca (`AppLifecycleListener`) güncel süreyle flush edilir. Tamamlanınca bekleyen yarım durum düşürülür ve süren yazma beklenir; tamamlanma kaydından sonra yarım kayıt yazılamaz. Daha önce tamamlanmış puzzle'ın tekrar oynanışı yarım kayıt yazmaz, böylece tamamlanma/yıldız korunur (önceki sürüm ekrandan çıkarken bunu ezebiliyordu). İçerik parmak izi kuralı (D-008) aynen geçerlidir.
 - **Durum:** **Implemented & Verified (geliştirme)**.
 
+## D-010 — Tekrar oynanışta ödül ve en iyi sonuç (N-2)
+
+- **Sahip:** Kullanıcı / kurucu; NONOGRAM-FIX-N2 talimatı (11 Kasım 2026).
+- **Kaynak (kullanıcı kuralları):** İlk tamamlanma normal coin verir (yıldız × 15); tekrar oynanış ek coin vermez; en yüksek yıldız ve en hızlı geçerli süre korunur; tamamlanma hiçbir zaman yarıma dönmez; tekrar oynanış serbesttir. Önceden açık bir ürün kararı bu kuralları değiştirmiyordu (D-004 yalnız günlük seri ve günlük hediyeyle ilgilidir).
+- **Uygulama (Engineering):** `CompletionRecords` tamamlanma kaydını (kasa + SQLite) coin'den **önce** yazar ve ilk tamamlanma olup olmadığını döndürür; aynı puzzle için çağrılar sıralıdır. Coin yalnız ilk tamamlanmada verilir. Önceki sürümlerin kayıtları da tanınır (yıldızı veya en iyi süresi olan satır tamamlanmış sayılır). Aynı deneme için çift çağrı yok sayılır. Tamamlanmış puzzle her zaman yeni tahtayla açılır (eski sürümün bıraktığı yarım tahta devam ettirilmez). Günlük puzzle aynı puzzle kuralına tabidir; tarih kaydı bir kez yazılır, yalnız daha hızlı süre güncellenir. Ana ekran coin/ipucu göstergesi bakiye değişince güncellenir.
+- **Bilinen sınır:** Kayıt ile coin yazımı arasında süreç ölürse o tek ödül kaybolabilir; asla iki kez ödenmez (SDK cüzdanında tekrar koruması yok, SDK değiştirilmedi).
+- **Durum:** **Implemented & Verified (geliştirme)**.
+
