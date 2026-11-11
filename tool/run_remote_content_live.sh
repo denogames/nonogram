@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Runs test/content/remote_content_live_test.dart against a throwaway local
 # studio-core-backend (STUDIO_CONTENT_ENABLED=true, temporary PostgreSQL, local only).
+# The game is not given the backend's HMAC secret: this also proves guest sign-in and the
+# content reads work without it.
 # Usage: tool/run_remote_content_live.sh /path/to/studio-core-backend
 set -euo pipefail
 GAME_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -21,5 +23,5 @@ trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
 for _ in $(seq 1 100); do curl -sf "http://127.0.0.1:${PORT}/health" >/dev/null && break; sleep 0.3; done
 echo "backend up on 127.0.0.1:${PORT} ($(git rev-parse --short HEAD))"
 cd "$GAME_DIR"
-NONOGRAM_LIVE_BACKEND_URL="http://127.0.0.1:${PORT}" NONOGRAM_LIVE_HMAC_KEY="$HMAC_SHARED_SECRET" NONOGRAM_LIVE_ADMIN_KEY="$ADMIN_API_KEY" \
+NONOGRAM_LIVE_BACKEND_URL="http://127.0.0.1:${PORT}" NONOGRAM_LIVE_ADMIN_KEY="$ADMIN_API_KEY" \
   flutter test test/content/remote_content_live_test.dart

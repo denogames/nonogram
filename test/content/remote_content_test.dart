@@ -12,6 +12,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nonogram/core/content/remote_content_config.dart';
 import 'package:nonogram/core/content/remote_content_service.dart';
 import 'package:nonogram/core/storage/database/app_database.dart';
+import 'package:nonogram/core/storage/saved_board.dart';
+import 'package:nonogram/core/storage/vault/game_state_vault.dart';
+import 'package:nonogram/engine/game/puzzle_engine.dart';
+import 'package:nonogram/engine/models/cell_state.dart';
 import 'package:nonogram/engine/models/puzzle_definition.dart';
 import 'package:nonogram/features/collections/domain/puzzle_repository.dart';
 import 'package:studio_core_sdk/studio_core_sdk.dart';
@@ -42,6 +46,21 @@ List<Map<String, Object?>> studioLevels(List<String> sourceIds, {String category
         return p;
       }(),
   ];
+}
+
+/// [level] published under [id] (checksum recomputed): a puzzle whose solution changed while
+/// its id and size stayed the same.
+Map<String, Object?> underId(Map<String, Object?> level, String id) {
+  final p = Map<String, Object?>.from(level)..['puzzleId'] = id;
+  p['checksum'] = PuzzleDefinition.calculateChecksum(
+    id: id,
+    width: p['width']! as int,
+    height: p['height']! as int,
+    rowHints: (p['rowHints']! as List).map((r) => (r as List).cast<int>()).toList(),
+    columnHints: (p['columnHints']! as List).map((r) => (r as List).cast<int>()).toList(),
+    encodedSolution: p['encodedSolution']! as String,
+  );
+  return p;
 }
 
 /// A stand-in for studio-core-backend's player endpoints.
@@ -169,7 +188,7 @@ void main() {
     if (dir.existsSync()) await dir.delete(recursive: true);
   });
 
-  RemoteContentConfig enabled() => RemoteContentConfig.of(flag: true, backendUrl: backend.url, hmacKey: 'test-hmac');
+  RemoteContentConfig enabled() => RemoteContentConfig.of(flag: true, backendUrl: backend.url);
 
   Future<PuzzleRepository> bundledRepository() async {
     final repo = PuzzleRepository();
@@ -184,12 +203,21 @@ void main() {
   }
 
   group('feature flag', () {
-    test('off by default and off without URL or key', () {
+    test('off by default, off without a usable URL, always off in release builds', () {
       expect(RemoteContentConfig.fromEnvironment().enabled, isFalse);
-      expect(RemoteContentConfig.of(flag: true, backendUrl: '', hmacKey: 'k').enabled, isFalse);
-      expect(RemoteContentConfig.of(flag: true, backendUrl: 'http://127.0.0.1:1', hmacKey: '').enabled, isFalse);
-      expect(RemoteContentConfig.of(flag: false, backendUrl: 'http://127.0.0.1:1', hmacKey: 'k').enabled, isFalse);
-      expect(RemoteContentConfig.of(flag: true, backendUrl: 'ftp://x', hmacKey: 'k').enabled, isFalse);
+      expect(RemoteContentConfig.of(flag: true, backendUrl: '').enabled, isFalse);
+      expect(RemoteContentConfig.of(flag: false, backendUrl: 'http://127.0.0.1:1').enabled, isFalse);
+      expect(RemoteContentConfig.of(flag: true, backendUrl: 'ftp://x').enabled, isFalse);
+      expect(RemoteContentConfig.of(flag: true, backendUrl: 'http://127.0.0.1:1').enabled, isTrue);
+      expect(RemoteContentConfig.of(flag: true, backendUrl: 'https://content.example.com', releaseBuild: true).enabled, isFalse);
+    });
+
+    test('the game carries no backend secret: the reader signs with a public constant', () {
+      final sources = Directory('lib').listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.dart'));
+      for (final f in sources) {
+        expect(f.readAsStringSync(), isNot(contains('NONOGRAM_CONTENT_HMAC_KEY')), reason: f.path);
+      }
+      expect(RemoteContentConfig.contentReaderSigningKey, 'nonogram-content-reader-public');
     });
 
     test('disabled: nothing is created, no request is made, bundled puzzles unchanged', () async {
@@ -383,6 +411,136 @@ void main() {
       repo.addListener(() => notified++);
       await service.refresh();
       expect(notified, greaterThan(0));
+    });
+  });
+
+  group('saved boards follow puzzle content', () {
+    late AppDatabase db;
+    late GameStateVault vault;
+    final now = DateTime(2026, 11, 11);
+
+    setUp(() async {
+      db = AppDatabase(NativeDatabase.memory());
+      vault = GameStateVault.instance;
+      await vault.initialize(storageDirectoryPath: (await Directory('${dir.path}/vault').create()).path);
+    });
+    tearDown(() async {
+      await vault.clearAll();
+      await db.close();
+    });
+
+    /// Plays two moves on [puzzle] and saves the unfinished attempt the way PuzzleScreen does.
+    Future<String> saveAttempt(PuzzleDefinition puzzle) async {
+      final engine = PuzzleEngine(puzzle: puzzle)
+        ..applyTool(0, 0, EditTool.cross)
+        ..applyTool(1, 1, EditTool.cross)
+        ..restoreSession(encodedBoard: '', mistakes: 1, hintsUsed: 2, elapsedSeconds: 40);
+      final cells = engine.serializeBoardState();
+      final stored = SavedBoard.encode(puzzle, cells);
+      await vault.savePuzzleState(SavedPuzzleState(
+        puzzleId: puzzle.id, isCompleted: false, stars: 0, bestTimeSeconds: 0, lastPlayed: now,
+        savedBoardState: stored, savedMistakes: 1, savedHintsUsed: 2, savedElapsedSeconds: 40));
+      await db.saveProgress(PuzzleProgressEntriesCompanion.insert(
+        puzzleId: puzzle.id, lastPlayed: now, savedBoardState: Value(stored),
+        savedMistakes: const Value(1), savedHintsUsed: const Value(2), savedElapsedSeconds: const Value(40)));
+      return cells;
+    }
+
+    Future<ResumableAttempt?> resume(PuzzleRepository repo, String id) async =>
+        ResumableAttempt.choose(repo.getPuzzleById(id)!, vault: vault.getPuzzleState(id), database: await db.getProgress(id));
+
+    test('unchanged content, a renamed puzzle and added puzzles keep the attempt', () async {
+      backend.publish('seasonal', 1, studioLevels(['cat_5x5']));
+      final (repo, service) = await launch();
+      await service.refresh();
+      final cells = await saveAttempt(repo.getPuzzleById('studio_cat_5x5')!);
+
+      expect((await resume(repo, 'studio_cat_5x5'))!.cells, cells, reason: 'unchanged content');
+
+      backend.publish('seasonal', 2, studioLevels(['cat_5x5', 'duck_5x5'], titles: {'cat_5x5': 'Kitten'}));
+      await service.refresh();
+      expect(repo.getPuzzleById('studio_cat_5x5')!.title, 'Kitten');
+      final attempt = (await resume(repo, 'studio_cat_5x5'))!;
+      expect(attempt.cells, cells, reason: 'a new title is not new content');
+      expect([attempt.mistakes, attempt.hintsUsed, attempt.elapsedSeconds], [1, 2, 40]);
+      expect(await resume(repo, 'studio_duck_5x5'), isNull, reason: 'an added puzzle starts empty');
+
+      final engine = PuzzleEngine(puzzle: repo.getPuzzleById('studio_cat_5x5')!)
+        ..restoreSession(encodedBoard: attempt.cells, mistakes: attempt.mistakes, hintsUsed: attempt.hintsUsed, elapsedSeconds: attempt.elapsedSeconds);
+      expect(engine.serializeBoardState(), cells);
+    });
+
+    test('a changed solution at the same size starts clean; history, stars and wallet stay', () async {
+      backend.publish('seasonal', 1, studioLevels(['cat_5x5', 'duck_5x5']));
+      final (repo, service) = await launch();
+      await service.refresh();
+      await saveAttempt(repo.getPuzzleById('studio_cat_5x5')!);
+      await db.saveProgress(PuzzleProgressEntriesCompanion.insert(
+          puzzleId: 'studio_duck_5x5', isCompleted: const Value(true), stars: const Value(3), bestTimeSeconds: const Value(55), lastPlayed: now));
+      await db.saveProgress(PuzzleProgressEntriesCompanion.insert(puzzleId: 'cat_5x5', isCompleted: const Value(true), stars: const Value(2), lastPlayed: now));
+      final wallet = await db.getOrCreateEconomy();
+
+      // Revision 2: both ids keep their size, but their pictures are different puzzles now.
+      final heart = studioLevels(['heart_5x5']).single;
+      final tree = studioLevels(['tree_5x5']).single;
+      backend.publish('seasonal', 2, [underId(heart, 'studio_cat_5x5'), underId(tree, 'studio_duck_5x5')]);
+      final report = await service.refresh();
+      expect(report.registrations['seasonal']!.registered, hasLength(2));
+      final changed = repo.getPuzzleById('studio_cat_5x5')!;
+      expect(changed.encodedSolution, heart['encodedSolution']);
+
+      expect(await resume(repo, 'studio_cat_5x5'), isNull, reason: 'old marks belong to another picture');
+      final fresh = PuzzleEngine(puzzle: changed);
+      expect(fresh.serializeBoardState(), '.' * 25);
+      expect([fresh.mistakes, fresh.hintsUsed, fresh.elapsedSeconds], [0, 0, 0]);
+
+      // Nothing was deleted: the old attempt is still stored until the player saves a new one.
+      expect((await db.getProgress('studio_cat_5x5'))!.savedBoardState, isNotNull);
+      expect(vault.getPuzzleState('studio_cat_5x5')!.savedBoardState, isNotNull);
+      final duck = (await db.getProgress('studio_duck_5x5'))!;
+      expect([duck.isCompleted, duck.stars, duck.bestTimeSeconds], [true, 3, 55], reason: 'completed history stays');
+      expect((await db.getProgress('cat_5x5'))!.stars, 2, reason: 'unrelated progress stays');
+      final after = await db.getOrCreateEconomy();
+      expect([after.coins, after.hintsRemaining], [wallet.coins, wallet.hintsRemaining]);
+    });
+
+    test('offline recovery: the attempt resumes from disk on cached content, not on changed content', () async {
+      backend.publish('seasonal', 1, studioLevels(['cat_5x5', 'duck_5x5']));
+      final (repo, service) = await launch();
+      await service.refresh();
+      final cells = await saveAttempt(repo.getPuzzleById('studio_cat_5x5')!);
+
+      // Process restart without a backend: vault reopened from disk, content from the cache.
+      backend.down = true;
+      await vault.initialize(storageDirectoryPath: '${dir.path}/vault');
+      final (offline, _) = await launch();
+      expect(offline.isRemotePuzzle('studio_cat_5x5'), isTrue);
+      final fromDisk = ResumableAttempt.choose(offline.getPuzzleById('studio_cat_5x5')!, vault: vault.getPuzzleState('studio_cat_5x5'));
+      expect(fromDisk!.cells, cells);
+
+      // The solution changes online; the next offline start uses the new cache and starts clean.
+      backend.down = false;
+      backend.publish('seasonal', 2, [underId(studioLevels(['heart_5x5']).single, 'studio_cat_5x5')]);
+      await service.refresh();
+      backend.down = true;
+      final (offline2, _) = await launch();
+      expect(await resume(offline2, 'studio_cat_5x5'), isNull);
+    });
+
+    test('older saves without a fingerprint resume when they fit; damaged ones never do', () async {
+      final repo = await bundledRepository();
+      final cat = repo.getPuzzleById('cat_5x5')!;
+      final legacy = 'X${'.' * 24}';
+      expect(SavedBoard.restorableCells(legacy, cat), legacy);
+      expect(SavedBoard.restorableCells('X....', cat), isNull, reason: 'wrong size');
+      expect(SavedBoard.restorableCells('fp1:$legacy', cat), isNull, reason: 'damaged prefix');
+      expect(SavedBoard.restorableCells(SavedBoard.encode(cat, legacy), cat), legacy);
+      expect(SavedBoard.restorableCells(SavedBoard.encode(repo.getPuzzleById('duck_5x5')!, legacy), cat), isNull,
+          reason: 'saved on another puzzle');
+      expect(ResumableAttempt.choose(cat,
+          database: PuzzleProgressEntry(puzzleId: 'cat_5x5', isCompleted: true, stars: 3, bestTimeSeconds: 9, lastPlayed: now,
+              savedBoardState: SavedBoard.encode(cat, legacy), savedMistakes: 0, savedHintsUsed: 0, savedElapsedSeconds: 0)), isNull,
+          reason: 'a completed puzzle is not resumed');
     });
   });
 

@@ -1,5 +1,30 @@
 # Test Verification Report
 
+## Entegrasyon stabilizasyonu — 11 Kasım 2026
+
+- **Kapsam:** PLATFORM-V1-010, [D-008](decisions.md#d-008--üretim-misafir-kimliği-güvenliği-ve-kayıtlı-tahta-uyumu). Repository `denogames/nonogram`, branch `master`, başlangıç HEAD `bdeff1de2acf6f9ed1ae519a56e779202046c1c1`.
+- **Ortam:** macOS, Flutter 3.47.5 stable; yerel tek kullanımlık studio-core-backend `71185a1` (geçici PostgreSQL, rastgele `HMAC_SHARED_SECRET`). Hiçbir şey deploy edilmedi.
+
+| Komut | Sonuç |
+| --- | --- |
+| `flutter analyze` | No issues found |
+| `flutter test` | 57 passed, 1 skipped (canlı test env olmadan atlanır). Önceki: 52 passed |
+| `flutter test test/content/remote_content_test.dart` | 18/18 passed |
+| `tool/run_remote_content_live.sh <studio-core-backend>` | passed; oyuna backend sırrı **verilmeden** misafir girişi, katalog, paket, revizyon 2, 304 ve çevrimdışı önbellek çalıştı |
+
+Yeni regresyon testleri (`saved boards follow puzzle content` grubu ve bayrak testleri):
+
+- **Değişmeyen içerik:** kaydedilen tahta, hata, ipucu ve süre aynen geri gelir; motor aynı tahtayı üretir.
+- **Yeniden adlandırma ve eklenen puzzle'lar:** başlık değişimi tahtayı korur; yeni puzzle boş başlar.
+- **Aynı boyutta değişen çözüm:** eski işaretler geri yüklenmez, yeni oturum boş (0 hata/ipucu/süre); eski kayıt silinmez; başka puzzle'ın tamamlanma/yıldız/en iyi süre kaydı, bundled ilerleme ve cüzdan satırı değişmez.
+- **Çevrimdışı kurtarma:** kasa diskten yeniden açılır, içerik önbellekten gelir, tahta devam eder; çözüm çevrimiçi değiştikten sonraki çevrimdışı açılışta tahta geri yüklenmez.
+- **Eski biçim:** parmak izsiz eski kayıt boyutu uyarsa geri yüklenir; bozuk önek, yanlış boyut, başka puzzle'ın parmak izi ve tamamlanmış puzzle geri yüklenmez.
+- **Güvenlik:** bayrak varsayılan kapalı, release build'de her koşulda kapalı; `lib/` içinde `NONOGRAM_CONTENT_HMAC_KEY` yok.
+
+CI: `.github/workflows/ci.yml` (push → master, elle çalıştırma; pull request tetikleyicisi yok). Gerçek GitHub Actions sonucu [project_status](project_status.md#continuity-checkpoint-11-kasım-2026--entegrasyon-stabilizasyonu) içinde kayıtlıdır.
+
+---
+
 ## Content Studio uzaktan içerik entegrasyonu — 11 Kasım 2026
 
 - **Kapsam:** PLATFORM-V1-009, [D-007](decisions.md#d-007--content-studio-uzaktan-içerik-entegrasyonu-opt-in). Repository `denogames/nonogram`, branch `master`, başlangıç HEAD `1222e309c5f0fa55db8fe4f01f6fc07eff3c32a8`; değişiklikler bu kayıtla aynı commit'tedir.

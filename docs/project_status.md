@@ -86,6 +86,18 @@ Tüm kayıtlar **açık**. “Statik gözlem” kaynakta görülen durumu, “ol
 - Teslim kabulü D-002, M1 kapsam/önceliği D-003, günlük seri D-004 ve üretim/yol haritası kararları D-005 içinde izlenir.
 - Sonraki iş **[Proposed M1 — Startup & Persistence Verification](roadmap.md#proposed-m1--startup--persistence-verification)**; henüz yürütülmedi.
 
+## Continuity Checkpoint (11 Kasım 2026) — Entegrasyon stabilizasyonu
+
+- **Yer / Git:** `/Users/burak.ersoy/burak/projects/denogames/nonogram`; branch `master`; başlangıç HEAD `bdeff1de2acf6f9ed1ae519a56e779202046c1c1` (origin ile eşit, temiz).
+- **Kullanıcı kararı:** PLATFORM-V1-009 geliştirme entegrasyonu olarak kabul edildi; PLATFORM-V1-010 ile CI, kayıtlı tahta uyumu ve üretim misafir kimliği güvenliği istendi ([D-008](decisions.md#d-008--üretim-misafir-kimliği-güvenliği-ve-kayıtlı-tahta-uyumu)).
+- **Uygulanan:**
+  - `lib/core/storage/saved_board.dart`: yarım tahta puzzle içerik parmak iziyle saklanır ve yalnız aynı içerikte devam eder; `PuzzleScreen` bunu kullanır.
+  - Uzak içerik backend sırrı almaz (`NONOGRAM_CONTENT_HMAC_KEY` kaldırıldı); release build'de koşulsuz kapalı.
+  - `.github/workflows/ci.yml`: bağımlılık, `flutter analyze`, `flutter test`; özel SDK için salt okunur `STUDIO_CORE_SDK_READ_TOKEN`; yalnız master push ve elle çalıştırma.
+- **Doğrulama (yerel):** analyze temiz; 57 passed / 1 skipped; sırsız canlı backend testi geçti ([test_report](test_report.md#entegrasyon-stabilizasyonu--11-kasım-2026)).
+- **CI durumu:** CI_STATUS_PLACEHOLDER
+- **Açık / release engelleri:** üretim içerik yolu seçimi (D-008 Proposed), deploy edilmiş backend, release'te özelliği açma kararı, Android'de gerçek çalıştırma.
+
 ## Continuity Checkpoint (11 Kasım 2026) — Content Studio entegrasyonu
 
 - **Yer / Git:** `/Users/burak.ersoy/burak/projects/denogames/nonogram`; branch `master`; başlangıç HEAD `1222e309c5f0fa55db8fe4f01f6fc07eff3c32a8` (origin ile eşit, temiz). Değişiklikler master'a commit edilip normal push ile gönderildi.

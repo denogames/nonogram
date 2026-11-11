@@ -8,6 +8,7 @@ import '../../../core/monetization/ads/ad_manager.dart';
 import '../../../core/monetization/economy/economy_manager.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/storage/database/app_database.dart';
+import '../../../core/storage/saved_board.dart';
 import '../../../core/storage/vault/game_state_vault.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../engine/game/puzzle_engine.dart';
@@ -78,29 +79,21 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
       maxMistakesAllowed: maxMistakes,
     );
 
-    // 1. Check crash-safe GameStateVault first, then SQLite fallback
+    // 1. Resume an unfinished attempt (crash-safe vault first, then SQLite), only when it was
+    //    saved on this puzzle's current content (see SavedBoard).
     final vault = GameStateVault.instance;
-    final vaultState = vault.isInitialized ? vault.getPuzzleState(puzzle.id) : null;
-
-    if (vaultState != null && !vaultState.isCompleted && vaultState.savedBoardState != null) {
+    final attempt = ResumableAttempt.choose(
+      puzzle,
+      vault: vault.isInitialized ? vault.getPuzzleState(puzzle.id) : null,
+      database: await ref.read(databaseProvider).getProgress(puzzle.id),
+    );
+    if (attempt != null) {
       engine.restoreSession(
-        encodedBoard: vaultState.savedBoardState!,
-        mistakes: vaultState.savedMistakes,
-        hintsUsed: vaultState.savedHintsUsed,
-        elapsedSeconds: vaultState.savedElapsedSeconds,
+        encodedBoard: attempt.cells,
+        mistakes: attempt.mistakes,
+        hintsUsed: attempt.hintsUsed,
+        elapsedSeconds: attempt.elapsedSeconds,
       );
-    } else {
-      final db = ref.read(databaseProvider);
-      final savedProgress = await db.getProgress(puzzle.id);
-
-      if (savedProgress != null && !savedProgress.isCompleted && savedProgress.savedBoardState != null) {
-        engine.restoreSession(
-          encodedBoard: savedProgress.savedBoardState!,
-          mistakes: savedProgress.savedMistakes,
-          hintsUsed: savedProgress.savedHintsUsed,
-          elapsedSeconds: savedProgress.savedElapsedSeconds,
-        );
-      }
     }
 
     if (mounted) {
@@ -138,7 +131,7 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
   Future<void> _saveProgressIfUnfinished() async {
     if (_engine == null || _puzzle == null || _engine!.isCompleted) return;
 
-    final boardStr = _engine!.serializeBoardState();
+    final boardStr = SavedBoard.encode(_puzzle!, _engine!.serializeBoardState());
     final now = DateTime.now();
 
     // 1. Persist to crash-safe vault

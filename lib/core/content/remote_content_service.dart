@@ -53,7 +53,7 @@ class RemoteContentService {
         _adapter = adapter ??
             StudioVpsAdapter(
               endpointUrl: config.backendUrl,
-              hmacSigningKey: config.hmacKey,
+              hmacSigningKey: RemoteContentConfig.contentReaderSigningKey,
               requestTimeout: const Duration(seconds: 8),
             ) {
     _packs = StudioContentPacks(
@@ -147,7 +147,7 @@ class RemoteContentService {
 
   Future<bool> _signIn() async {
     try {
-      await _adapter.authenticateAndHandshake(gameId: gameId, deviceId: await _deviceId(), hmacSigningKey: config.hmacKey);
+      await _adapter.authenticateAndHandshake(gameId: gameId, deviceId: await _deviceId(), hmacSigningKey: RemoteContentConfig.contentReaderSigningKey);
       _signedIn = true;
     } catch (e) {
       debugPrint('[remote content] guest sign-in failed: $e');

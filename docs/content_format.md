@@ -103,17 +103,20 @@ The game can additionally load published `nonogram` content packs from a studio-
 Studio. It is **off by default**; a default build makes no network request for content, creates no
 `remote_content` directory and never starts a guest session. Decision: [D-007](decisions.md#d-007--content-studio-uzaktan-içerik-entegrasyonu-opt-in).
 
-Enable it only with explicit build defines (all three are required; otherwise it stays off):
+Enable it only in a debug or profile build, with explicit build defines (release builds are
+always off, [D-008](decisions.md#d-008--üretim-misafir-kimliği-güvenliği-ve-kayıtlı-tahta-uyumu)):
 
 ```bash
 flutter run \
   --dart-define=NONOGRAM_REMOTE_CONTENT=true \
-  --dart-define=NONOGRAM_CONTENT_BACKEND_URL=http://127.0.0.1:3920 \
-  --dart-define=NONOGRAM_CONTENT_HMAC_KEY=<development guest HMAC secret>
+  --dart-define=NONOGRAM_CONTENT_BACKEND_URL=http://127.0.0.1:3920
 ```
 
-The HMAC secret is the backend's guest-session shared secret. It is compiled into the app, so only use
-disposable development secrets; never commit one.
+The game takes **no backend secret**. Guest sign-in and the content reads are not HMAC-verified by
+studio-core-backend, so the reader signs with a public constant
+(`RemoteContentConfig.contentReaderSigningKey`). Never put the backend's `HMAC_SHARED_SECRET` in a
+mobile build: it can be extracted, and it protects sync, purchases, ad rewards and leaderboards for
+every game on that backend.
 
 Behaviour when enabled (`lib/core/content/`):
 
@@ -130,7 +133,20 @@ Behaviour when enabled (`lib/core/content/`):
 - Player progress (`PuzzleProgressEntries`, game-state vault, wallet) is never written or deleted by
   this feature; progress of a withdrawn puzzle stays in the database and returns if it is republished.
 
-Live check against a throwaway local backend (temporary PostgreSQL, nothing deployed):
+Saved boards and content changes:
+
+- An unfinished board is stored as `fp1:<fingerprint>:<cells>`; the fingerprint is the puzzle's
+  content checksum (id, size, clues, solution; not the title). It is restored only on the same
+  content, so a renamed puzzle keeps the board, a puzzle whose solution changed starts clean.
+  Completion, stars, best time and the wallet are separate records and are never changed; the old
+  attempt is replaced by the next save, not deleted. Older saves without a fingerprint restore as
+  before when their size fits.
+- Authoring rule: a materially different picture gets a **new `content_id`**. Reusing an id for a
+  different solution is handled safely (no stale marks), but the old completion and stars stay on
+  that id, so the new picture would appear already solved.
+
+Live check against a throwaway local backend (temporary PostgreSQL, nothing deployed); the game is
+given no backend secret:
 
 ```bash
 tool/run_remote_content_live.sh /path/to/studio-core-backend

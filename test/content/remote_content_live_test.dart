@@ -13,7 +13,6 @@ import 'package:nonogram/features/collections/domain/puzzle_repository.dart';
 import 'package:studio_core_sdk/studio_core_sdk.dart';
 
 final String _url = Platform.environment['NONOGRAM_LIVE_BACKEND_URL'] ?? '';
-final String _hmac = Platform.environment['NONOGRAM_LIVE_HMAC_KEY'] ?? '';
 final String _admin = Platform.environment['NONOGRAM_LIVE_ADMIN_KEY'] ?? '';
 
 Future<Map<String, dynamic>> _adminCall(String method, String path, Object? body, int expected) async {
@@ -65,7 +64,7 @@ List<Map<String, Object?>> _entries(List<String> ids, {Map<String, String> title
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = null;
-  final bool skip = _url.isEmpty || _hmac.isEmpty || _admin.isEmpty;
+  final bool skip = _url.isEmpty || _admin.isEmpty;
 
   test('a pack published in Content Studio reaches the game, updates, survives offline', () async {
     final dir = await Directory.systemTemp.createTemp('nonogram_live_');
@@ -80,7 +79,7 @@ void main() {
     expect((created['draft'] as Map)['validation']['valid'], isTrue, reason: jsonEncode(created['draft']['validation']));
     await _adminCall('POST', '$base/$packId/publish', {'revision': 1, 'expected_version': 1, 'base_published_revision': null}, 200);
 
-    final config = RemoteContentConfig.of(flag: true, backendUrl: _url, hmacKey: _hmac);
+    final config = RemoteContentConfig.of(flag: true, backendUrl: _url);
     final repo = PuzzleRepository();
     await repo.loadBundledPuzzles();
     final service = (await startRemoteContent(config: config, repository: repo, storageDirectoryPath: dir.path))!;
@@ -109,7 +108,7 @@ void main() {
     final offlineRepo = PuzzleRepository();
     await offlineRepo.loadBundledPuzzles();
     final offline = (await startRemoteContent(
-      config: RemoteContentConfig.of(flag: true, backendUrl: 'http://127.0.0.1:9', hmacKey: _hmac),
+      config: RemoteContentConfig.of(flag: true, backendUrl: 'http://127.0.0.1:9'),
       repository: offlineRepo,
       storageDirectoryPath: dir.path,
     ))!;
