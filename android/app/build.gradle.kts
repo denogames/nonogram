@@ -15,7 +15,7 @@ if (hasKeystore) {
 }
 
 android {
-    namespace = "com.antigravity.nonogram.nonogram"
+    namespace = "com.denogames.nonogram"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -25,8 +25,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.antigravity.nonogram.nonogram"
+        applicationId = "com.denogames.nonogram"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

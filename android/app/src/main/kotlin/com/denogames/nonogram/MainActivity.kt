@@ -1,4 +1,4 @@
-package com.antigravity.nonogram.nonogram
+package com.denogames.nonogram
 
 import io.flutter.embedding.android.FlutterActivity
 
