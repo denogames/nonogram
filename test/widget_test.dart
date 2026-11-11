@@ -43,7 +43,7 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(database),
           preferencesProvider.overrideWithValue(prefs),
-          puzzleRepositoryProvider.overrideWithValue(repo),
+          puzzleRepositoryProvider.overrideWith((ref) => repo),
         ],
         child: const NonogramApp(),
       ),

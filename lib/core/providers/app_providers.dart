@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:studio_core_sdk/studio_core_sdk.dart';
 import '../../features/collections/domain/puzzle_repository.dart';
 import '../analytics/analytics_service.dart';
@@ -24,8 +25,9 @@ final analyticsProvider = Provider<AnalyticsService>((ref) {
   return AnalyticsService.instance;
 });
 
-// Puzzle Repository Provider
-final puzzleRepositoryProvider = Provider<PuzzleRepository>((ref) {
+// Puzzle Repository Provider. A ChangeNotifier so screens rebuild when remotely published
+// puzzles arrive (only with remote content enabled; bundled puzzles never change at runtime).
+final puzzleRepositoryProvider = ChangeNotifierProvider<PuzzleRepository>((ref) {
   return PuzzleRepository();
 });
 

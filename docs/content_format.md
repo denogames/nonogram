@@ -96,3 +96,42 @@ Runs `PuzzleValidator` on each entry:
 dart run bin/content_tool.dart build-packs
 ```
 Compiles curated ASCII pixel-art collections into verified JSON files in `assets/puzzles/`.
+
+## Remote content from Content Studio (opt-in, PLATFORM-V1-009)
+
+The game can additionally load published `nonogram` content packs from a studio-core-backend Content
+Studio. It is **off by default**; a default build makes no network request for content, creates no
+`remote_content` directory and never starts a guest session. Decision: [D-007](decisions.md#d-007--content-studio-uzaktan-içerik-entegrasyonu-opt-in).
+
+Enable it only with explicit build defines (all three are required; otherwise it stays off):
+
+```bash
+flutter run \
+  --dart-define=NONOGRAM_REMOTE_CONTENT=true \
+  --dart-define=NONOGRAM_CONTENT_BACKEND_URL=http://127.0.0.1:3920 \
+  --dart-define=NONOGRAM_CONTENT_HMAC_KEY=<development guest HMAC secret>
+```
+
+The HMAC secret is the backend's guest-session shared secret. It is compiled into the app, so only use
+disposable development secrets; never commit one.
+
+Behaviour when enabled (`lib/core/content/`):
+
+- Before the first frame, cached packs from `<app support>/remote_content/` are registered (disk only).
+- After the first frame, one background refresh signs in as a guest (random per-install device id),
+  reads `GET /v1/content/packs?content_type=nonogram`, then fetches each listed pack with ETag/304.
+  An expired session (401) triggers one fresh sign-in.
+- Each entry goes through the same parser as bundled puzzles (`puzzleId` = `content_id`), the checksum
+  check and the `PuzzleValidator` quality gate. Malformed, unsolvable, tampered, duplicate or
+  conflicting entries are skipped; a bundled puzzle id always wins, and between packs the first wins.
+- Remote puzzles appear in Collections under their `category`; they never change the daily puzzle.
+- Offline or failed refresh: the last valid cached pack stays; with no cache, only bundled puzzles show.
+  A pack the catalog no longer lists is removed from the catalog and its cache is cleared.
+- Player progress (`PuzzleProgressEntries`, game-state vault, wallet) is never written or deleted by
+  this feature; progress of a withdrawn puzzle stays in the database and returns if it is republished.
+
+Live check against a throwaway local backend (temporary PostgreSQL, nothing deployed):
+
+```bash
+tool/run_remote_content_live.sh /path/to/studio-core-backend
+```

@@ -64,3 +64,11 @@ Durumlar ilgili nesneye ve kapsama bağlanır; birbirinin yerine geçmez.
 - **Kaynak:** Kullanıcı promptu: `studio_core_sdk` offline-first entegrasyonu, zero network packets, persistent install_id, crash-safe vault, single-source wallet (`gold`, `hints`), leaf timer optimizasyonu, offline UI gizleme ve yerel veri sıfırlama.
 - **Karar / gerekçe:** Sahte monetizasyon ve çift cüzdan ayrışmasını engellemek, oyun durumunu HMAC-SHA256 korumalı disk kasasına taşımak.
 - **Durum:** **Implemented & Verified.** `flutter analyze` 0 hata/uyarı, `flutter test` 39/39 test geçti. Working tree manuel inceleme için bekletilmektedir (commit/push yapılmamıştır).
+
+## D-007 — Content Studio uzaktan içerik entegrasyonu (opt-in)
+
+- **Sahip:** Kullanıcı / kurucu; PLATFORM-V1-009 talimatı (11 Kasım 2026).
+- **Kaynak:** Kullanıcı onayı: "The founder authorizes the limited Nonogram game-repository changes required for the first real Content Studio integration."
+- **Karar:** Oyun, yayınlanmış `nonogram` Content Studio paketlerini `StudioContentPacks` (studio-core-sdk `50f6d2e`) ile yükleyebilir. Özellik **varsayılan olarak kapalıdır** ve yalnız `NONOGRAM_REMOTE_CONTENT=true` + geçerli `NONOGRAM_CONTENT_BACKEND_URL` + boş olmayan `NONOGRAM_CONTENT_HMAC_KEY` build define'ları ile açılır. Kapalıyken ağ isteği, misafir oturumu, arka plan işi veya yeni dosya yoktur; SDK `enableCloudSync: false` olarak kalır.
+- **Kurallar (Engineering önerisi, bu entegrasyonda uygulandı):** bundled puzzle kimliği her zaman kazanır; paketler arası çakışmada ilk kayıtlı paket kazanır; uzak puzzle'lar günlük puzzle seçimine girmez; katalogdan kalkan paket katalogdan ve önbellekten kaldırılır, oyuncu ilerlemesi hiçbir durumda silinmez.
+- **Durum:** **Implemented & Verified (geliştirme).** Kanıt [test_report](test_report.md#content-studio-uzaktan-içerik-entegrasyonu--11-kasım-2026). Üretim backend'i, üretim misafir kimlik bilgisi dağıtımı ve flag açık sürüm kararı verilmedi; bunlar ayrı onay gerektirir.

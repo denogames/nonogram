@@ -806,8 +806,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "78f4c9257f124f2c60e0e4e6992727bbf6a71881"
-      resolved-ref: "78f4c9257f124f2c60e0e4e6992727bbf6a71881"
+      ref: "50f6d2e912d078983bdb5d4d0823cd5147390951"
+      resolved-ref: "50f6d2e912d078983bdb5d4d0823cd5147390951"
       url: "https://github.com/denogames/studio-core-sdk.git"
     source: git
     version: "1.0.0"

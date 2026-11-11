@@ -1,5 +1,49 @@
 # Test Verification Report
 
+## Content Studio uzaktan içerik entegrasyonu — 11 Kasım 2026
+
+- **Kapsam:** PLATFORM-V1-009, [D-007](decisions.md#d-007--content-studio-uzaktan-içerik-entegrasyonu-opt-in). Repository `denogames/nonogram`, branch `master`, başlangıç HEAD `1222e309c5f0fa55db8fe4f01f6fc07eff3c32a8`; değişiklikler bu kayıtla aynı commit'tedir.
+- **Ortam:** macOS, Flutter 3.47.5 stable, iOS Simulator iPhone 17. studio-core-sdk `50f6d2e` (SDK CI: [run 42927746766](https://github.com/denogames/studio-core-sdk/actions/runs/42927746766) başarılı). Yerel, tek kullanımlık studio-core-backend `9321704` (`STUDIO_CONTENT_ENABLED=true`, geçici PostgreSQL). Hiçbir şey deploy edilmedi.
+- **Bu repository'de GitHub Actions workflow'u yoktur;** aşağıdaki sonuçlar yerel çalıştırmalardır, CI kanıtı değildir.
+
+### Komutlar
+
+| Komut | Sonuç |
+| --- | --- |
+| `flutter analyze` | No issues found |
+| `flutter test` | 52 passed, 1 skipped (skip: canlı backend testi env olmadan atlanır). Değişiklik öncesi taban: 39 passed |
+| `flutter test test/content/remote_content_test.dart` | 13/13 passed |
+| `tool/run_remote_content_live.sh <studio-core-backend>` | passed (backend `9321704`) |
+
+### Otomatik senaryolar (`test/content/remote_content_test.dart`, loopback sahte backend)
+
+Flag ayrıştırma; flag kapalı (servis yok, 0 istek, dosya yok); soğuk başlangıç (tam istek sırası, günlük puzzle değişmez); çevrimdışı açılışta önbellek kullanımı; misafir oturumu reddi (bundled + önbellek kalır); süresi dolmuş oturum (401 → tek yeniden giriş); revizyon değişimi ve paketin yayından kalkması; bozuk payload, checksum'ı değiştirilmiş giriş ve desteklenmeyen şema 2; bundled ve paketler arası id çakışması; bozuk önbellek dosyası; drift ilerlemesinin korunması; repository dinleyici bildirimi.
+
+### Canlı backend testi (`test/content/remote_content_live_test.dart`)
+
+Admin API ile gerçek taslak → yayın; oyun servisi misafir girişi + katalog + paket çekti; revizyon 2 yayınlandı ve yalnız değişen puzzle'ın revizyonu arttı; ikinci yenilemede 304; backend'siz yeniden açılışta önbellek kullanıldı.
+
+### Gerçek uygulama (iOS Simulator, iPhone 17)
+
+Yayınlanan paket: `seasonal_picks`, kategori `seasonal` (revizyon 1: Studio Heart 5×5, Studio Tree 5×5, Studio Penguin 10×10). İstekler backend önündeki sayaçlı bir proxy ile kaydedildi.
+
+| Adım | Gözlem |
+| --- | --- |
+| Flag kapalı build | Proxy **0 istek**; uygulama kapsayıcısında `remote_content` dizini yok. Bundled Food/"Apple" 3 yıldızla çözüldü (coin 100 → 145). |
+| Aynı veriler üzerine flag açık build | Proxy tam olarak `POST /v1/auth/guest`, `GET /v1/content/packs?content_type=nonogram`, `GET /v1/content/packs/seasonal_picks`. Collections'ta yeni "Seasonal" (0/3); Food & Drinks 1/3 ve 3 yıldız korundu; günlük puzzle ("Key") ve 145 coin değişmedi. |
+| Uzak puzzle oynandı | Seasonal → "Studio Heart" normal puzzle ekranında Content Studio ipuçlarıyla açıldı ve 3 yıldızla çözüldü (coin 190). |
+| Çevrimdışı yeniden açılış | Proxy durduruldu, uygulama kapatılıp açıldı: Seasonal 1/3 + 3 yıldız ve Food & Drinks 1/3 + 3 yıldız önbellekten gösterildi; 190 coin. |
+| Revizyon 2 | Studio Tree → "Studio Pine" ve yeni "Studio Star" 5×5 yayınlandı; yeniden açılışta aynı 3 istek, Seasonal **1/4**, Studio Heart 3 yıldızını korudu, yeni 5×5 puzzle listede. |
+
+### Sınırlar
+
+- İlk çevrimiçi açılışta uzak içerik ilk kareden sonra gelir; sonraki açılışlarda önbellekten hemen görünür. Yenileme açılış başına bir kezdir.
+- Aynı boyutta içeriği değişen bir uzak puzzle'ın yarım kalmış tahtası eski işaretlerle geri yüklenebilir (mevcut uzunluk koruması çökmeyi engeller).
+- Uzak puzzle başlıkları mevcut UI davranışı gereği çözülene kadar "Level N" olarak görünür; ana ekran alt başlığı statik metindir.
+- Android'de gerçek cihaz/emülatör çalıştırması yapılmadı; doğrulama iOS Simulator'dadır.
+
+---
+
 ## Studio Core SDK Offline-First Hardening Doğrulama Kaydı — 28 Ekim 2026
 
 - **Tarih:** 28 Ekim 2026 (Europe/Istanbul)

@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:studio_core_sdk/studio_core_sdk.dart';
 import 'core/audio/haptics_service.dart';
+import 'core/content/remote_content_config.dart';
+import 'core/content/remote_content_service.dart';
 import 'core/monetization/economy/economy_manager.dart';
 import 'core/providers/app_providers.dart';
 import 'core/router/app_router.dart';
@@ -48,6 +52,15 @@ void main() async {
   final puzzleRepository = PuzzleRepository();
   await puzzleRepository.loadBundledPuzzles();
 
+  // 5b. Remotely published puzzles (Content Studio). Off unless built with
+  // NONOGRAM_REMOTE_CONTENT=true and a backend URL and key; when off nothing is created and
+  // no request is made. When on, cached packs are registered now and refreshed after launch.
+  final remoteContent = await startRemoteContent(
+    config: RemoteContentConfig.fromEnvironment(),
+    repository: puzzleRepository,
+    storageDirectoryPath: appSupportDir.path,
+  );
+
   // 6. Economy Preload backed by Single-Source Studio Core Wallet
   final economyManager = EconomyManager(db: database, wallet: sdk.wallet);
   await economyManager.initialize();
@@ -57,12 +70,14 @@ void main() async {
       overrides: [
         databaseProvider.overrideWithValue(database),
         preferencesProvider.overrideWithValue(preferences),
-        puzzleRepositoryProvider.overrideWithValue(puzzleRepository),
+        puzzleRepositoryProvider.overrideWith((ref) => puzzleRepository),
         economyManagerProvider.overrideWithValue(economyManager),
       ],
       child: const NonogramApp(),
     ),
   );
+
+  if (remoteContent != null) unawaited(remoteContent.refresh());
 }
 
 class NonogramApp extends ConsumerWidget {

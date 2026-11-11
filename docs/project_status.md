@@ -86,6 +86,19 @@ Tüm kayıtlar **açık**. “Statik gözlem” kaynakta görülen durumu, “ol
 - Teslim kabulü D-002, M1 kapsam/önceliği D-003, günlük seri D-004 ve üretim/yol haritası kararları D-005 içinde izlenir.
 - Sonraki iş **[Proposed M1 — Startup & Persistence Verification](roadmap.md#proposed-m1--startup--persistence-verification)**; henüz yürütülmedi.
 
+## Continuity Checkpoint (11 Kasım 2026) — Content Studio entegrasyonu
+
+- **Yer / Git:** `/Users/burak.ersoy/burak/projects/denogames/nonogram`; branch `master`; başlangıç HEAD `1222e309c5f0fa55db8fe4f01f6fc07eff3c32a8` (origin ile eşit, temiz). Değişiklikler master'a commit edilip normal push ile gönderildi.
+- **Kullanıcı kararı:** PLATFORM-V1-009 ile kurucu, ilk gerçek Content Studio entegrasyonu için sınırlı oyun değişikliklerini onayladı ([D-007](decisions.md#d-007--content-studio-uzaktan-içerik-entegrasyonu-opt-in)).
+- **Uygulanan:**
+  - studio-core-sdk bağımlılığı `78f4c92` → `50f6d2e` (tam commit; `StudioContentPacks` + katalog).
+  - `lib/core/content/`: `RemoteContentConfig` (varsayılan kapalı flag) ve `RemoteContentService` (misafir oturumu, katalog, ETag'li paket çekme, önbellek, yayından kalkma, 401'de tek yeniden giriş).
+  - `PuzzleRepository` artık `ChangeNotifier`; `registerRemotePack` / `removeRemotePack` mevcut parser, checksum ve kalite kapısını kullanır; günlük seçim yalnız bundled puzzle'lardan yapılır.
+  - `main.dart`: flag açıksa önbellek ilk kareden önce, yenileme ilk kareden sonra.
+  - Testler: `test/content/` (13 sahte backend testi + opt-in canlı test) ve `tool/run_remote_content_live.sh`.
+- **Doğrulama:** `flutter analyze` temiz; `flutter test` 52 passed / 1 skipped; canlı backend testi ve iOS Simulator'da gerçek uygulama akışı geçti ([test_report](test_report.md#content-studio-uzaktan-içerik-entegrasyonu--11-kasım-2026)). Bu repository'de CI workflow'u yok.
+- **Açık / bağımlılıklar:** deploy edilmiş backend (`STUDIO_CONTENT_ENABLED`), üretim misafir kimlik bilgisi dağıtımı (şu an build'e gömülü geliştirme HMAC sırrı), üretim backend URL'si, flag açık sürüm kararı, özel SDK'ya erişen CI.
+
 ## Continuity Checkpoint (28 Ekim 2026)
 
 - **Tarih:** 28 Ekim 2026, Europe/Istanbul.

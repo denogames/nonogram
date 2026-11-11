@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:studio_core_sdk/studio_core_sdk.dart';
 import '../../../engine/models/puzzle_definition.dart';
@@ -18,10 +19,39 @@ class PuzzleCategory {
   });
 }
 
-class PuzzleRepository {
+/// Why a remotely published puzzle was not registered.
+enum RemotePuzzleRejection { malformed, failedValidation, conflictsWithBundled, conflictsWithOtherPack, duplicateInPack }
+
+/// Outcome of registering one remotely published pack.
+class RemotePackRegistration {
+  final String packId;
+  final List<String> registered;
+  final Map<String, RemotePuzzleRejection> rejected;
+
+  /// The payload had no usable `levels` list; puzzles registered before were kept.
+  final bool payloadMalformed;
+
+  const RemotePackRegistration({
+    required this.packId,
+    this.registered = const [],
+    this.rejected = const {},
+    this.payloadMalformed = false,
+  });
+}
+
+class PuzzleRepository extends ChangeNotifier {
   final Map<String, PuzzleDefinition> _puzzlesById = {};
   final Map<String, List<PuzzleDefinition>> _puzzlesByCategory = {};
   bool _isLoaded = false;
+
+  /// Puzzles registered from remotely published packs: puzzle id → pack id, and pack id →
+  /// puzzle ids in pack order. Bundled and locally registered puzzles are never in here.
+  final Map<String, String> _remoteOwner = {};
+  final Map<String, List<String>> _remoteByPack = {};
+
+  bool isRemotePuzzle(String id) => _remoteOwner.containsKey(id);
+  List<String> remotePuzzleIds(String packId) => List.unmodifiable(_remoteByPack[packId] ?? const []);
+  Iterable<String> get remotePackIds => _remoteByPack.keys;
 
   bool get isLoaded => _isLoaded;
   List<PuzzleDefinition> get allPuzzles => _puzzlesById.values.toList();
@@ -218,12 +248,15 @@ class PuzzleRepository {
   }
 
   /// Selects deterministic Daily Nonogram based on date string (YYYY-MM-DD).
+  ///
+  /// Remotely published puzzles are left out so that content arriving, changing or being
+  /// withdrawn never changes which puzzle is a given day's daily.
   PuzzleDefinition? getDailyPuzzleForDate(DateTime date) {
-    if (_puzzlesById.isEmpty) return null;
+    final list = _puzzlesById.values.where((p) => !_remoteOwner.containsKey(p.id)).toList();
+    if (list.isEmpty) return null;
 
     final dateKey = '${date.year}-${date.month}-${date.day}';
     final hash = dateKey.hashCode.abs();
-    final list = _puzzlesById.values.toList();
     return list[hash % list.length];
   }
 
@@ -243,5 +276,90 @@ class PuzzleRepository {
     }
 
     return imported;
+  }
+
+  /// Registers the puzzles of a remotely published pack (Content Studio payload
+  /// `{packId, version, gameId, levels: [...]}`), replacing what that pack registered before.
+  ///
+  /// Every level goes through the same parser as LiveOps packs and the same quality gate as
+  /// external imports (checksum and [PuzzleValidator]). A puzzle id already used by a bundled
+  /// puzzle or by another pack is skipped, so identities stay stable and progress keyed by
+  /// puzzle id is never reassigned. A payload without a usable `levels` list changes nothing.
+  RemotePackRegistration registerRemotePack(String packId, Map<String, Object?> payload) {
+    final levels = payload['levels'];
+    if (levels is! List) {
+      return RemotePackRegistration(packId: packId, payloadMalformed: true);
+    }
+    final accepted = <PuzzleDefinition>[];
+    final rejected = <String, RemotePuzzleRejection>{};
+    final seen = <String>{};
+    for (var i = 0; i < levels.length; i++) {
+      final raw = levels[i];
+      PuzzleDefinition? puzzle;
+      try {
+        puzzle = raw is Map ? _parseLiveOpsPuzzle(packId, raw.cast<String, dynamic>()) : null;
+      } catch (_) {
+        puzzle = null;
+      }
+      if (puzzle == null) {
+        rejected['#$i'] = RemotePuzzleRejection.malformed;
+        continue;
+      }
+      final id = puzzle.id;
+      if (!seen.add(id)) {
+        rejected[id] = RemotePuzzleRejection.duplicateInPack;
+        continue;
+      }
+      final owner = _remoteOwner[id];
+      if (owner == null && _puzzlesById.containsKey(id)) {
+        rejected[id] = RemotePuzzleRejection.conflictsWithBundled;
+        continue;
+      }
+      if (owner != null && owner != packId) {
+        rejected[id] = RemotePuzzleRejection.conflictsWithOtherPack;
+        continue;
+      }
+      if (!puzzle.verifyChecksum() || !PuzzleValidator.validate(puzzle).passesQualityGate) {
+        rejected[id] = RemotePuzzleRejection.failedValidation;
+        continue;
+      }
+      accepted.add(puzzle);
+    }
+
+    _removeRemote(packId);
+    for (final puzzle in accepted) {
+      _puzzlesById[puzzle.id] = puzzle;
+      _puzzlesByCategory.putIfAbsent(puzzle.category, () => []).add(puzzle);
+      _remoteOwner[puzzle.id] = packId;
+    }
+    if (accepted.isNotEmpty) _remoteByPack[packId] = accepted.map((p) => p.id).toList();
+    _isLoaded = true;
+    notifyListeners();
+    return RemotePackRegistration(
+      packId: packId,
+      registered: accepted.map((p) => p.id).toList(),
+      rejected: rejected,
+    );
+  }
+
+  /// Withdraws a remote pack's puzzles from the catalog (e.g. it is no longer published).
+  /// Player progress stored by puzzle id is not touched and applies again if it returns.
+  void removeRemotePack(String packId) {
+    if (_removeRemote(packId)) notifyListeners();
+  }
+
+  bool _removeRemote(String packId) {
+    final ids = _remoteByPack.remove(packId);
+    if (ids == null) return false;
+    for (final id in ids) {
+      _remoteOwner.remove(id);
+      final puzzle = _puzzlesById.remove(id);
+      if (puzzle != null) {
+        final list = _puzzlesByCategory[puzzle.category];
+        list?.removeWhere((p) => p.id == id);
+        if (list != null && list.isEmpty) _puzzlesByCategory.remove(puzzle.category);
+      }
+    }
+    return true;
   }
 }
